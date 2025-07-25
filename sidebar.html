@@ -475,6 +475,18 @@
                 modalWindow.document.write(htmlContent);
                 modalWindow.document.close();
                 modalWindow.focus();
+                
+                // Set up communication with the popup
+                window.currentModal = modalWindow;
+                
+                // Check if popup is closed manually
+                const checkClosed = setInterval(() => {
+                  if (modalWindow.closed) {
+                    clearInterval(checkClosed);
+                    window.currentModal = null;
+                  }
+                }, 1000);
+                
               } else {
                 alert('Popup blocked! Please allow popups for this site and try again.');
               }
@@ -495,6 +507,35 @@
       handleError({ message: 'Failed to open form' });
     }
   }
+
+  // Global function that the modal window can call
+  window.onModalSuccess = function(message) {
+    if (message) {
+      alert(message);
+    }
+    // Refresh the dashboard data
+    refreshDashboard();
+    
+    // Close the modal if it's still open
+    if (window.currentModal && !window.currentModal.closed) {
+      window.currentModal.close();
+      window.currentModal = null;
+    }
+  };
+
+  // Global function for modal to close itself
+  window.closeModal = function() {
+    if (window.currentModal && !window.currentModal.closed) {
+      window.currentModal.close();
+      window.currentModal = null;
+    }
+  };
+
+  // Test function to verify communication
+  window.testCommunication = function() {
+    console.log('Communication test called');
+    return 'Communication working!';
+  };
 
   function handleDeleteBooking(bookingId) {
     if (!bookingId) {

@@ -395,6 +395,18 @@
             throw new Error('Form type not specified');
           }
           
+          // Test communication with parent window
+          if (window.opener) {
+            try {
+              if (typeof window.opener.testCommunication === 'function') {
+                const testResult = window.opener.testCommunication();
+                console.log('Parent window communication test:', testResult);
+              }
+            } catch (error) {
+              console.warn('Parent window communication test failed:', error);
+            }
+          }
+          
           // Start loading timeout
           this.loadTimeout = setTimeout(() => {
             this.handleError('Loading timeout - please check your connection and try again');
@@ -636,19 +648,44 @@
           }
           
           const formData = this.getFormData(form);
+          console.log('Submitting form data:', formData);
+          
           const result = await this.submitForm(formData);
+          console.log('Submission result:', result);
           
           if (result && result.status === 'success') {
-            alert(result.message || 'Form submitted successfully!');
+            const message = result.message || 'Form submitted successfully!';
             
-            // Refresh parent window
-            if (window.opener && typeof window.opener.loadDashboardData === 'function') {
-              window.opener.loadDashboardData();
-            } else if (window.opener && typeof window.opener.refreshDashboard === 'function') {
-              window.opener.refreshDashboard();
+            // Notify parent window of success
+            if (window.opener) {
+              try {
+                // Call the parent window's success handler
+                if (typeof window.opener.onModalSuccess === 'function') {
+                  window.opener.onModalSuccess(message);
+                } else {
+                  // Fallback - try to refresh dashboard directly
+                  if (typeof window.opener.refreshDashboard === 'function') {
+                    window.opener.refreshDashboard();
+                  } else if (typeof window.opener.loadDashboardData === 'function') {
+                    window.opener.loadDashboardData();
+                  }
+                  alert(message);
+                }
+                
+                // Give a moment for the parent window to process
+                setTimeout(() => {
+                  this.handleClose();
+                }, 500);
+                
+              } catch (error) {
+                console.error('Error communicating with parent window:', error);
+                alert(message);
+                this.handleClose();
+              }
+            } else {
+              alert(message);
+              this.handleClose();
             }
-            
-            this.handleClose();
           } else {
             throw new Error(result?.message || 'Submission failed');
           }
@@ -704,30 +741,75 @@
         };
         
         const functionName = functionMap[this.formType.toLowerCase()];
+        console.log('Form type:', this.formType, 'Function name:', functionName, 'Record ID:', this.recordId);
+        
         if (!functionName) {
           throw new Error('Invalid form type for submission');
         }
         
-        return this.serverCall(functionName, formData);
+        console.log('Calling server function:', functionName, 'with data:', formData);
+        
+        try {
+          const result = await this.serverCall(functionName, formData);
+          console.log('Server response:', result);
+          return result;
+        } catch (error) {
+          console.error('Server call failed:', error);
+          throw error;
+        }
       }
 
       async serverCall(functionName, ...args) {
         return new Promise((resolve, reject) => {
+          console.log('Making server call:', functionName, 'with args:', args);
+          
+          // Set a timeout for the server call
+          const timeout = setTimeout(() => {
+            reject(new Error('Server call timed out after 30 seconds'));
+          }, 30000);
+          
           google.script.run
-            .withSuccessHandler(resolve)
-            .withFailureHandler(reject)
+            .withSuccessHandler((result) => {
+              clearTimeout(timeout);
+              console.log('Server call success:', functionName, result);
+              resolve(result);
+            })
+            .withFailureHandler((error) => {
+              clearTimeout(timeout);
+              console.error('Server call error:', functionName, error);
+              reject(error);
+            })
             [functionName](...args);
         });
       }
 
       handleClose() {
-        if (this.context === 'WebApp') {
-          window.close();
-        } else if (google && google.script && google.script.host) {
-          google.script.host.close();
-        } else {
-          // Fallback
-          window.close();
+        try {
+          // Notify parent window that we're closing
+          if (window.opener && typeof window.opener.closeModal === 'function') {
+            window.opener.closeModal();
+          }
+        } catch (error) {
+          console.error('Error notifying parent window:', error);
+        }
+        
+        // Close the window
+        try {
+          if (this.context === 'WebApp') {
+            window.close();
+          } else if (google && google.script && google.script.host) {
+            google.script.host.close();
+          } else {
+            // Fallback
+            window.close();
+          }
+        } catch (error) {
+          console.error('Error closing window:', error);
+        }
+        
+        // Force close as backup
+        if (window.forceClose) {
+          window.forceClose();
         }
       }
 
@@ -762,6 +844,16 @@
       if (window.modalManager) {
         window.modalManager.handleClose();
       }
+    };
+
+    // Force close if window is still open after 2 seconds of trying to close
+    window.forceClose = function() {
+      setTimeout(() => {
+        if (!window.closed) {
+          console.log('Force closing window');
+          window.close();
+        }
+      }, 2000);
     };
 
     // Initialize modal when DOM is ready
