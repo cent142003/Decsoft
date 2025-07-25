@@ -3,6 +3,7 @@
 <head>
 <base target="_top">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
 <style>
   html { font-size: 16px; }
   body { 
@@ -296,15 +297,25 @@
   const APP_CONTEXT = "<?= context ?>";
   let isLoading = false;
 
+  // Enhanced initialization for Google Apps Script
+  function ensureGoogleScriptReady() {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      initializeApp();
+    } else {
+      console.log('Waiting for Google Apps Script to load...');
+      setTimeout(ensureGoogleScriptReady, 100);
+    }
+  }
+
   // Initialize when DOM is ready
   document.addEventListener('DOMContentLoaded', function() {
-    initializeApp();
+    ensureGoogleScriptReady();
   });
 
   // Fallback for older browsers
   window.onload = function() {
     if (!isLoading) {
-      initializeApp();
+      ensureGoogleScriptReady();
     }
   };
 
@@ -316,6 +327,12 @@
     
     // Check if Google Apps Script is available
     if (typeof google !== 'undefined' && google.script && google.script.run) {
+      // ✅ Force script context to load fully - fixes "stuck on loading" issue
+      try {
+        google.script.url.getLocation(() => {});
+      } catch (e) {
+        console.log('getLocation not available, continuing anyway');
+      }
       loadDashboardData();
     } else {
       // Retry initialization after a short delay

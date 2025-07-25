@@ -5,6 +5,7 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Jeffston Hostels Management System">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   
   <title>Jeffston Hostels - Form</title>
   
@@ -393,6 +394,15 @@
         try {
           console.log('Modal initializing with form type:', this.formType, 'Record ID:', this.recordId);
           
+          // ✅ Additional force script context initialization
+          if (typeof google !== 'undefined' && google.script && google.script.url) {
+            try {
+              google.script.url.getLocation(() => {});
+            } catch (e) {
+              console.log('Additional getLocation call not available');
+            }
+          }
+          
           if (!this.formType) {
             throw new Error('Form type not specified');
           }
@@ -440,6 +450,12 @@
         return new Promise((resolve, reject) => {
           const check = () => {
             if (typeof google !== 'undefined' && google.script && google.script.run) {
+              // ✅ Force script context to load fully - fixes "stuck on loading" issue
+              try {
+                google.script.url.getLocation(() => {});
+              } catch (e) {
+                console.log('getLocation not available, continuing anyway');
+              }
               resolve();
             } else if (this.attempts++ < ModalManager.RETRY_ATTEMPTS) {
               setTimeout(check, 200);
@@ -903,14 +919,46 @@
 
     // Initialize modal when DOM is ready
     function initModal() {
+      // ✅ Force Google Apps Script context initialization for popups
+      if (typeof google !== 'undefined' && google.script) {
+        try {
+          // Multiple initialization calls to ensure proper loading
+          google.script.url.getLocation(() => {});
+          if (google.script.host) {
+            google.script.host.editor.focus();
+          }
+        } catch (e) {
+          console.log('Advanced Google Script initialization not available');
+        }
+      }
+      
       window.modalManager = new ModalManager();
       window.modalManager.initialize();
     }
 
+    // Enhanced initialization for Google Apps Script popups
+    let initAttempts = 0;
+    const maxInitAttempts = 50; // 5 seconds timeout
+    
+    function ensureGoogleScriptReady() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        initModal();
+      } else if (initAttempts++ < maxInitAttempts) {
+        console.log('Waiting for Google Apps Script to load... attempt', initAttempts);
+        setTimeout(ensureGoogleScriptReady, 100);
+      } else {
+        console.error('Google Apps Script failed to load after 5 seconds');
+        document.getElementById('errorState').hidden = false;
+        document.getElementById('loadingState').hidden = true;
+        document.getElementById('errorMessage').textContent = 
+          'Failed to connect to Google Apps Script. Please close this window and try again.';
+      }
+    }
+
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', initModal);
+      document.addEventListener('DOMContentLoaded', ensureGoogleScriptReady);
     } else {
-      initModal();
+      ensureGoogleScriptReady();
     }
 
     // Global error handler
