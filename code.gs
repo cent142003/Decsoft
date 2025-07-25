@@ -375,9 +375,6 @@ function setupForm() {
 }
 
 class HostelApp {
-  static DEBOUNCE_DELAY = 300; // ms
-  static RETRY_ATTEMPTS = 3;
-
   constructor() {
     // Cache DOM elements
     this.formContainer = document.getElementById('formContainer');
@@ -561,6 +558,10 @@ class HostelApp {
     alert(`Error: ${error.message || 'Failed to submit form'}`);
   }
 }
+
+// Static properties for HostelApp class
+HostelApp.DEBOUNCE_DELAY = 300; // ms
+HostelApp.RETRY_ATTEMPTS = 3;
 
 // Cache frequently accessed data
 const CACHE_DURATION = 21600; // 6 hours
