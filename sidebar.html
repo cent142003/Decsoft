@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+<base target="_top">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  html { font-size: 16px; }
+  body { 
+    font-family: 'Google Sans', 'Roboto', sans-serif; 
+    margin: 20px; 
+    background-color: #f8f9fa; 
+    color: #3c4043;
+    padding: 1rem;
+  }
+  h1 { 
+    color: #1a73e8; 
+    font-weight: 500; 
+    text-align: center; 
+    font-size: 22px;
+    margin-bottom: 25px;
+  }
+  h2 {
+    color: #3c4043;
+    border-bottom: 1px solid #e0e0e0;
+    padding-bottom: 5px;
+    margin-top: 30px;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  .user-info { 
+    font-size: 0.8em; 
+    color: #5f6368; 
+    text-align: right; 
+    margin-bottom: 20px; 
+  }
+  .metric-cards-grid { 
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: 1rem; 
+    margin-bottom: 20px; 
+  }
+  @media (min-width: 600px) {
+    .metric-cards-grid { grid-template-columns: 1fr 1fr; }
+  }
+  .metric-card { 
+    background: #fff; 
+    padding: 15px; 
+    border-radius: 8px; 
+    border-left: 5px solid; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+  }
+  .metric-card.occupancy { border-color: #4285F4; }
+  .metric-card.revenue { border-color: #34A853; }
+  .metric-card.checkins { border-color: #FBBC04; }
+  .metric-card.checkouts { border-color: #EA4335; }
+  .metric-label { 
+    font-size: 0.8em; 
+    text-transform: uppercase; 
+    color: #5f6368; 
+    margin-bottom: 5px;
+  }
+  .metric-value { 
+    font-size: 1.5em; 
+    font-weight: 500; 
+  }
+  .action-buttons-grid { 
+    display: grid; 
+    grid-template-columns: 1fr; 
+    gap: 1rem; 
+  }
+  @media (min-width: 500px) {
+    .action-buttons-grid { grid-template-columns: 1fr 1fr; }
+  }
+  button.action-button { 
+    padding: 12px; 
+    border: none; 
+    border-radius: 8px; 
+    color: white; 
+    cursor: pointer; 
+    text-align: center; 
+    font-size: 1.1rem;
+    min-height: 2.5rem;
+    font-weight: 500;
+  }
+  .add-booking { background-color: #4285F4; }
+  .add-resident { background-color: #34A853; }
+  .record-payment { background-color: #FBBC04; color: #202124; }
+  .manage-rooms { background-color: #EA4335; }
+  .list-section { 
+    margin-top: 20px; 
+  }
+  .item-list { 
+    list-style: none; 
+    padding: 0; 
+  }
+  .list-item { 
+    background: #fff; 
+    padding: 10px; 
+    border-radius: 4px; 
+    margin-bottom: 8px; 
+    font-size: 1rem; 
+    border: 1px solid #e8eaed; 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center;
+  }
+  .list-item-buttons { 
+    display: flex; 
+    gap: 8px; 
+  }
+  .edit-button { 
+    background-color: #f1f3f4; 
+    color: #5f6368; 
+    border: 1px solid #dadce0; 
+    padding: 5px 10px; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    font-size: 1rem; 
+  }
+  .delete-button { 
+    background-color: #fce8e6; 
+    color: #c5221f; 
+    border: 1px solid #f4c7c3; 
+    padding: 5px 10px; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    font-size: 1rem; 
+  }
+  /* Add spinner for loading */
+  .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #eee; border-top: 3px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
+  @keyframes spin { 100% { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+  <h1>Jeffston Hostels Dashboard</h1>
+  <div class="user-info">Signed in as: <span id="userEmail"></span></div>
+
+  <div class="metric-cards-grid">
+    <div class="metric-card occupancy"><span class="metric-label">Occupancy</span><div class="metric-value"><span id="totalOccupancy">0</span>%</div></div>
+    <div class="metric-card revenue"><span class="metric-label">Revenue (Month)</span><div class="metric-value">GHS <span id="totalRevenue">0</span></div></div>
+    <div class="metric-card checkins"><span class="metric-label">Check-ins (7d)</span><div class="metric-value" id="upcomingCheckinsCount">0</div></div>
+    <div class="metric-card checkouts"><span class="metric-label">Check-outs (7d)</span><div class="metric-value" id="upcomingCheckoutsCount">0</div></div>
+  </div>
+
+  <h2>Quick Actions</h2>
+  <div class="action-buttons-grid">
+    <button class="action-button add-booking" 
+          data-action="openModal" 
+          data-form-type="Booking">
+      ➕ New Booking
+    </button>
+    <button class="action-button add-resident" 
+          data-action="openModal" 
+          data-form-type="Resident">
+      👤 Add Resident
+    </button>
+    <button class="action-button record-payment" 
+          data-action="openModal" 
+          data-form-type="Payment">
+      💰 Record Payment
+    </button>
+    <button class="action-button manage-rooms" 
+          data-action="navigateToSheet" 
+          data-sheet-name="Rooms">
+      🛏️ Manage Rooms
+    </button>
+  </div>
+
+  <div class="list-section">
+    <h3>Recent Bookings</h3>
+    <ul id="recentBookingsList" class="item-list"><li>Loading...</li></ul>
+  </div>
+  
+  <div class="list-section">
+    <h3>Active Residents</h3>
+    <ul id="activeResidentsList" class="item-list"><li>Loading...</li></ul>
+  </div>
+
+  <div class="list-section">
+    <h3>Upcoming Check-ins</h3>
+    <ul id="upcomingCheckinsList" class="item-list"><li>Loading...</li></ul>
+  </div>
+
+  <div class="list-section">
+    <h3>Upcoming Check-outs</h3>
+    <ul id="upcomingCheckoutsList" class="item-list"><li>Loading...</li></ul>
+  </div>
+
+  <template id="bookingItemTemplate">
+    <li class="list-item">
+      <div><b>${bookingId}</b>: ${residentId} in ${roomId} (${status})</div>
+      <div class="list-item-buttons">
+        <button class="edit-button" 
+                data-action="openModal" 
+                data-form-type="Booking" 
+                data-id="${bookingId}">
+          Edit
+        </button>
+        <button class="delete-button" 
+                data-action="deleteBooking" 
+                data-id="${bookingId}">
+          Delete
+        </button>
+      </div>
+    </li>
+  </template>
+
+<script>
+  const APP_CONTEXT = "<?= context ?>";
+
+  function showLoadingSpinner() {
+    document.getElementById('recentBookingsList').innerHTML = '<li><div class="spinner"></div> Loading...</li>';
+    document.getElementById('activeResidentsList').innerHTML = '<li><div class="spinner"></div> Loading...</li>';
+    document.getElementById('upcomingCheckinsList').innerHTML = '<li><div class="spinner"></div> Loading...</li>';
+    document.getElementById('upcomingCheckoutsList').innerHTML = '<li><div class="spinner"></div> Loading...</li>';
+  }
+
+  window.onload = function() {
+    showLoadingSpinner();
+    initializeApp();
+  };
+
+  function initializeApp() {
+    if (typeof google !== 'undefined' && google.script && google.script.run) {
+      loadDashboardData();
+    } else {
+      setTimeout(initializeApp, 100);
+    }
+  }
+
+  function loadDashboardData() {
+    google.script.run.withSuccessHandler(populateDashboard).withFailureHandler(showError).getDashboardData();
+  }
+
+  function populateDashboard(data) {
+    if (data.error) { return showError({ message: data.error }); }
+    document.getElementById('userEmail').textContent = data.userEmail;
+    document.getElementById('totalOccupancy').textContent = data.totalOccupancy;
+    document.getElementById('totalRevenue').textContent = data.totalRevenue;
+    document.getElementById('upcomingCheckinsCount').textContent = data.upcomingCheckins.length;
+    document.getElementById('upcomingCheckoutsCount').textContent = data.upcomingCheckouts.length;
+    
+    const recentBookingsList = document.getElementById('recentBookingsList');
+    recentBookingsList.innerHTML = data.recentBookings.length ? data.recentBookings.map(b => `
+        <li class="list-item">
+            <div><b>${b.bookingId}</b>: ${b.residentId} in ${b.roomId} (${b.status})</div>
+            <div class="list-item-buttons">
+                <button class="edit-button" 
+                        data-action="openModal" 
+                        data-form-type="Booking" 
+                        data-id="${b.bookingId}">
+                  Edit
+                </button>
+                <button class="delete-button" 
+                        data-action="deleteBooking" 
+                        data-id="${b.bookingId}">
+                  Delete
+                </button>
+            </div>
+        </li>`
+    ).join('') : '<li>No recent bookings.</li>';
+
+    const activeResidentsList = document.getElementById('activeResidentsList');
+    activeResidentsList.innerHTML = data.activeResidents.length ? data.activeResidents.map(r => `
+        <li class="list-item">
+            <div><b>${r.residentId}</b>: ${r.name} (${r.contact})</div>
+            <div class="list-item-buttons">
+                <button class="edit-button" onclick="handleModalOpen('Resident', '${r.residentId}')">Edit</button>
+            </div>
+        </li>`
+    ).join('') : '<li>No active residents.</li>';
+
+    const upcomingCheckinsList = document.getElementById('upcomingCheckinsList');
+    upcomingCheckinsList.innerHTML = data.upcomingCheckins.length ? data.upcomingCheckins.map(i => `<li class="list-item"><b>${i.bookingId}</b>: ${i.residentId} on ${i.date}</li>`).join('') : '<li>No upcoming check-ins.</li>';
+    const upcomingCheckoutsList = document.getElementById('upcomingCheckoutsList');
+    upcomingCheckoutsList.innerHTML = data.upcomingCheckouts.length ? data.upcomingCheckouts.map(o => `<li class="list-item"><b>${o.bookingId}</b>: ${o.residentId} on ${o.date}</li>`).join('') : '<li>No upcoming check-outs.</li>';
+  }
+
+  function handleModalOpen(formType, recordId = null) {
+    if (APP_CONTEXT === 'WebApp') {
+      google.script.run
+        .withSuccessHandler(function(htmlContent) {
+          const modalWindow = window.open('', '_blank', 'width=550,height=650,scrollbars=yes,resizable=yes');
+          if (modalWindow) {
+            modalWindow.document.write(htmlContent);
+            modalWindow.document.close();
+            modalWindow.focus();
+          } else {
+            alert('Popup blocked! Please allow popups for this site.');
+          }
+        })
+        .withFailureHandler(showError)
+        .getModalHtml(formType, recordId);
+    } else {
+      google.script.run.withFailureHandler(showError).showModalFormInSheet(formType, recordId);
+    }
+  }
+
+  function handleDeleteBooking(bookingId) {
+    if (!confirm(`Are you sure you want to delete booking ${bookingId}? This action cannot be undone.`)) {
+        return;
+    }
+    google.script.run
+        .withSuccessHandler(function(response) {
+            if (response.status === 'success') {
+                alert(response.message);
+                loadDashboardData();
+            } else {
+                showError(response);
+            }
+        })
+        .withFailureHandler(showError)
+        .deleteBooking(bookingId);
+  }
+
+  function handleSheetNavigation(sheetName) {
+    if (APP_CONTEXT === 'WebApp') {
+      alert(`To manage ${sheetName}, please open the Google Sheet directly.`);
+    } else {
+      google.script.run.withFailureHandler(showError).navigateToSheet(sheetName);
+    }
+  }
+
+  function showError(error) {
+    console.error('Apps Script Error:', error);
+    alert('An error occurred: ' + error.message);
+  }
+</script>
+</body>
+</html>

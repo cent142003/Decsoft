@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <base target="_top">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Jeffston Hostels Management System">
+  
+  <!-- Preconnect to external resources -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  
+  <!-- Critical CSS inline for faster rendering -->
+  <style>
+    .form-container { opacity: 0; transition: opacity 0.3s; }
+    .form-container.loaded { opacity: 1; }
+    .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #eee; border-top: 3px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { color: #d93025; }
+    .invalid { border-color: #d93025; }
+    [hidden] { display: none !important; }
+  </style>
+  
+  <!-- Non-critical CSS deferred -->
+  <link rel="stylesheet" href="css/styles.css" media="print" onload="this.media='all'">
+</head>
+<body>
+  <div id="formContainer" class="form-container">
+    <!-- State management -->
+    <input type="hidden" id="formType" value="<?!= formTypeToLoad ?>" data-required="true">
+    <input type="hidden" id="recordId" value="<?!= recordId ?>">
+    <input type="hidden" id="context" value="<?!= context ?>">
+    
+    <!-- Loading state -->
+    <div id="loadingState">
+      <h2 id="formTitle">Loading Form...</h2>
+      <div class="spinner"></div>
+    </div>
+
+    <!-- Error state -->
+    <div id="errorState" hidden>
+      <h2 class="error">Error Loading Form</h2>
+      <p id="errorMessage"></p>
+      <button onclick="retryLoad()">Retry</button>
+    </div>
+
+    <!-- Dynamic forms -->
+    <div id="bookingForm" hidden><?!= include('bookingForm'); ?></div>
+    <div id="residentForm" hidden><?!= include('residentForm'); ?></div>
+    <div id="paymentForm" hidden><?!= include('paymentForm'); ?></div>
+  </div>
+
+  <!-- Core application script -->
+  <script>
+    class ModalManager {
+      static LOAD_TIMEOUT = 10000; // 10 seconds
+      static RETRY_ATTEMPTS = 3;
+      
+      constructor() {
+        this.formType = document.getElementById('formType').value;
+        this.recordId = document.getElementById('recordId').value;
+        this.context = document.getElementById('context').value;
+        this.container = document.getElementById('formContainer');
+        this.attempts = 0;
+        
+        // Bind methods
+        this.handleSubmit = this.handleSubmit.bind(this);
+        this.handleClose = this.handleClose.bind(this);
+      }
+
+      async initialize() {
+        try {
+          // Start loading timeout
+          this.loadTimeout = setTimeout(() => this.handleError('Loading timeout'), ModalManager.LOAD_TIMEOUT);
+          
+          // Wait for Google Apps Script
+          await this.waitForGoogleScript();
+          
+          // Show correct form
+          await this.showForm();
+          
+          // Setup event listeners
+          this.setupEventListeners();
+          
+          // Mark as loaded
+          this.container.classList.add('loaded');
+          
+          clearTimeout(this.loadTimeout);
+        } catch (error) {
+          this.handleError(error);
+        }
+      }
+
+      async waitForGoogleScript() {
+        return new Promise((resolve, reject) => {
+          const check = () => {
+            if (typeof google !== 'undefined' && google.script && google.script.run) {
+              resolve();
+            } else if (this.attempts++ < ModalManager.RETRY_ATTEMPTS) {
+              setTimeout(check, 100);
+            } else {
+              reject(new Error('Failed to load Google Apps Script'));
+            }
+          };
+          check();
+        });
+      }
+
+      async showForm() {
+        // Hide loading state
+        document.getElementById('loadingState').hidden = true;
+        
+        // Show appropriate form
+        const formElement = document.getElementById(`${this.formType.toLowerCase()}Form`);
+        if (!formElement) throw new Error('Invalid form type');
+        
+        formElement.hidden = false;
+        
+        // Update title
+        document.getElementById('formTitle').textContent = `${this.formType} Form`;
+        
+        // Prefill if editing
+        if (this.recordId) {
+          await this.prefillForm(formElement);
+        }
+      }
+
+      async prefillForm(form) {
+        const data = await new Promise((resolve, reject) => {
+          const handler = `get${this.formType}Details`;
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            [handler](this.recordId);
+        });
+        
+        if (data) {
+          Object.entries(data).forEach(([key, value]) => {
+            const input = form.querySelector(`[data-field="${key}"]`);
+            if (input) input.value = value;
+          });
+        }
+      }
+
+      setupEventListeners() {
+        // Form submission
+        this.container.querySelector('form').addEventListener('submit', this.handleSubmit);
+        
+        // Close button
+        this.container.querySelector('.close-btn')?.addEventListener('click', this.handleClose);
+        
+        // Validation
+        this.container.querySelectorAll('[data-required="true"]').forEach(input => {
+          input.addEventListener('invalid', e => {
+            e.preventDefault();
+            input.classList.add('invalid');
+          });
+        });
+      }
+
+      async handleSubmit(event) {
+        event.preventDefault();
+        const form = event.target;
+        const submitBtn = form.querySelector('[type="submit"]');
+        
+        try {
+          submitBtn.disabled = true;
+          submitBtn.innerHTML = '<div class="spinner"></div>';
+          
+          const formData = this.getFormData(form);
+          const result = await this.submitForm(formData);
+          
+          if (result.status === 'success') {
+            alert(result.message);
+            if (window.opener?.loadDashboardData) {
+              window.opener.loadDashboardData();
+            }
+            this.handleClose();
+          } else {
+            throw new Error(result.message);
+          }
+        } catch (error) {
+          alert(`Error: ${error.message}`);
+        } finally {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit';
+        }
+      }
+
+      getFormData(form) {
+        const data = {};
+        form.querySelectorAll('[data-field]').forEach(input => {
+          data[input.dataset.field] = input.value.trim();
+        });
+        return data;
+      }
+
+      async submitForm(formData) {
+        const handler = this.recordId ? `update${this.formType}` : `add${this.formType}`;
+        return new Promise((resolve, reject) => {
+          google.script.run
+            .withSuccessHandler(resolve)
+            .withFailureHandler(reject)
+            [handler](formData);
+        });
+      }
+
+      handleClose() {
+        if (this.context === 'WebApp') {
+          window.close();
+        } else {
+          google.script.host.close();
+        }
+      }
+
+      handleError(error) {
+        clearTimeout(this.loadTimeout);
+        document.getElementById('loadingState').hidden = true;
+        document.getElementById('errorState').hidden = false;
+        document.getElementById('errorMessage').textContent = error.message || error;
+      }
+    }
+
+    // Initialize modal
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => new ModalManager().initialize());
+    } else {
+      new ModalManager().initialize();
+    }
+  </script>
+</body>
+</html>
