@@ -7,10 +7,11 @@
   html { font-size: 16px; }
   body { 
     font-family: 'Google Sans', 'Roboto', sans-serif; 
-    margin: 20px; 
+    margin: 0; 
     background-color: #f8f9fa; 
     color: #3c4043;
     padding: 1rem;
+    box-sizing: border-box;
   }
   h1 { 
     color: #1a73e8; 
@@ -18,8 +19,9 @@
     text-align: center; 
     font-size: 22px;
     margin-bottom: 25px;
+    margin-top: 0;
   }
-  h2 {
+  h2, h3 {
     color: #3c4043;
     border-bottom: 1px solid #e0e0e0;
     padding-bottom: 5px;
@@ -27,11 +29,19 @@
     font-size: 18px;
     font-weight: 500;
   }
+  h3 {
+    font-size: 16px;
+    margin-top: 20px;
+  }
   .user-info { 
     font-size: 0.8em; 
     color: #5f6368; 
     text-align: right; 
     margin-bottom: 20px; 
+    padding: 8px;
+    background: #fff;
+    border-radius: 4px;
+    border: 1px solid #e8eaed;
   }
   .metric-cards-grid { 
     display: grid; 
@@ -48,6 +58,10 @@
     border-radius: 8px; 
     border-left: 5px solid; 
     box-shadow: 0 1px 3px rgba(0,0,0,0.1); 
+    transition: transform 0.2s ease;
+  }
+  .metric-card:hover {
+    transform: translateY(-2px);
   }
   .metric-card.occupancy { border-color: #4285F4; }
   .metric-card.revenue { border-color: #34A853; }
@@ -58,6 +72,7 @@
     text-transform: uppercase; 
     color: #5f6368; 
     margin-bottom: 5px;
+    letter-spacing: 0.5px;
   }
   .metric-value { 
     font-size: 1.5em; 
@@ -67,6 +82,7 @@
     display: grid; 
     grid-template-columns: 1fr; 
     gap: 1rem; 
+    margin-bottom: 20px;
   }
   @media (min-width: 500px) {
     .action-buttons-grid { grid-template-columns: 1fr 1fr; }
@@ -78,9 +94,20 @@
     color: white; 
     cursor: pointer; 
     text-align: center; 
-    font-size: 1.1rem;
+    font-size: 1rem;
     min-height: 2.5rem;
     font-weight: 500;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  button.action-button:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  }
+  button.action-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
   }
   .add-booking { background-color: #4285F4; }
   .add-resident { background-color: #34A853; }
@@ -88,243 +115,461 @@
   .manage-rooms { background-color: #EA4335; }
   .list-section { 
     margin-top: 20px; 
+    background: #fff;
+    border-radius: 8px;
+    padding: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
   .item-list { 
     list-style: none; 
     padding: 0; 
+    margin: 0;
   }
   .list-item { 
-    background: #fff; 
-    padding: 10px; 
-    border-radius: 4px; 
+    background: #f8f9fa; 
+    padding: 12px; 
+    border-radius: 6px; 
     margin-bottom: 8px; 
-    font-size: 1rem; 
+    font-size: 0.9rem; 
     border: 1px solid #e8eaed; 
     display: flex; 
     justify-content: space-between; 
     align-items: center;
+    transition: background-color 0.2s ease;
+  }
+  .list-item:hover {
+    background-color: #f1f3f4;
+  }
+  .list-item:last-child {
+    margin-bottom: 0;
+  }
+  .list-item-content {
+    flex: 1;
   }
   .list-item-buttons { 
     display: flex; 
-    gap: 8px; 
+    gap: 6px; 
+    flex-shrink: 0;
+  }
+  .edit-button, .delete-button { 
+    border: 1px solid;
+    padding: 4px 8px; 
+    border-radius: 4px; 
+    cursor: pointer; 
+    font-size: 0.8rem; 
+    transition: all 0.2s ease;
   }
   .edit-button { 
     background-color: #f1f3f4; 
     color: #5f6368; 
-    border: 1px solid #dadce0; 
-    padding: 5px 10px; 
-    border-radius: 4px; 
-    cursor: pointer; 
-    font-size: 1rem; 
+    border-color: #dadce0; 
+  }
+  .edit-button:hover {
+    background-color: #e8eaed;
   }
   .delete-button { 
     background-color: #fce8e6; 
     color: #c5221f; 
-    border: 1px solid #f4c7c3; 
-    padding: 5px 10px; 
-    border-radius: 4px; 
-    cursor: pointer; 
-    font-size: 1rem; 
+    border-color: #f4c7c3; 
+  }
+  .delete-button:hover {
+    background-color: #fdd8d3;
+  }
+  .refresh-button {
+    float: right;
+    background: #1a73e8;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-left: 10px;
+  }
+  .refresh-button:hover {
+    background: #1557b0;
+  }
+  .error-message {
+    background: #fce8e6;
+    color: #c5221f;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    border: 1px solid #f4c7c3;
+  }
+  .loading-text {
+    color: #5f6368;
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
   }
   /* Add spinner for loading */
-  .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #eee; border-top: 3px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; margin: auto; }
+  .spinner { 
+    display: inline-block; 
+    width: 20px; 
+    height: 20px; 
+    border: 2px solid #eee; 
+    border-top: 2px solid #1a73e8; 
+    border-radius: 50%; 
+    animation: spin 1s linear infinite; 
+    margin-right: 8px;
+    vertical-align: middle;
+  }
   @keyframes spin { 100% { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
-  <h1>Jeffston Hostels Dashboard</h1>
-  <div class="user-info">Signed in as: <span id="userEmail"></span></div>
+  <h1>Jeffston Hostels Dashboard
+    <button class="refresh-button" onclick="refreshDashboard()">🔄 Refresh</button>
+  </h1>
+  
+  <div class="user-info">Signed in as: <span id="userEmail">Loading...</span></div>
 
   <div class="metric-cards-grid">
-    <div class="metric-card occupancy"><span class="metric-label">Occupancy</span><div class="metric-value"><span id="totalOccupancy">0</span>%</div></div>
-    <div class="metric-card revenue"><span class="metric-label">Revenue (Month)</span><div class="metric-value">GHS <span id="totalRevenue">0</span></div></div>
-    <div class="metric-card checkins"><span class="metric-label">Check-ins (7d)</span><div class="metric-value" id="upcomingCheckinsCount">0</div></div>
-    <div class="metric-card checkouts"><span class="metric-label">Check-outs (7d)</span><div class="metric-value" id="upcomingCheckoutsCount">0</div></div>
+    <div class="metric-card occupancy">
+      <span class="metric-label">Occupancy</span>
+      <div class="metric-value"><span id="totalOccupancy">--</span>%</div>
+    </div>
+    <div class="metric-card revenue">
+      <span class="metric-label">Revenue (Month)</span>
+      <div class="metric-value">GHS <span id="totalRevenue">--</span></div>
+    </div>
+    <div class="metric-card checkins">
+      <span class="metric-label">Check-ins (7d)</span>
+      <div class="metric-value" id="upcomingCheckinsCount">--</div>
+    </div>
+    <div class="metric-card checkouts">
+      <span class="metric-label">Check-outs (7d)</span>
+      <div class="metric-value" id="upcomingCheckoutsCount">--</div>
+    </div>
   </div>
 
   <h2>Quick Actions</h2>
   <div class="action-buttons-grid">
     <button class="action-button add-booking" 
-          data-action="openModal" 
-          data-form-type="Booking">
+            onclick="handleModalOpen('booking')">
       ➕ New Booking
     </button>
     <button class="action-button add-resident" 
-          data-action="openModal" 
-          data-form-type="Resident">
+            onclick="handleModalOpen('resident')">
       👤 Add Resident
     </button>
     <button class="action-button record-payment" 
-          data-action="openModal" 
-          data-form-type="Payment">
+            onclick="handleModalOpen('payment')">
       💰 Record Payment
     </button>
     <button class="action-button manage-rooms" 
-          data-action="navigateToSheet" 
-          data-sheet-name="Rooms">
+            onclick="handleSheetNavigation('Rooms')">
       🛏️ Manage Rooms
     </button>
   </div>
 
   <div class="list-section">
     <h3>Recent Bookings</h3>
-    <ul id="recentBookingsList" class="item-list"><li>Loading...</li></ul>
+    <ul id="recentBookingsList" class="item-list">
+      <li class="loading-text"><div class="spinner"></div>Loading...</li>
+    </ul>
   </div>
   
   <div class="list-section">
     <h3>Active Residents</h3>
-    <ul id="activeResidentsList" class="item-list"><li>Loading...</li></ul>
+    <ul id="activeResidentsList" class="item-list">
+      <li class="loading-text"><div class="spinner"></div>Loading...</li>
+    </ul>
   </div>
 
   <div class="list-section">
     <h3>Upcoming Check-ins</h3>
-    <ul id="upcomingCheckinsList" class="item-list"><li>Loading...</li></ul>
+    <ul id="upcomingCheckinsList" class="item-list">
+      <li class="loading-text"><div class="spinner"></div>Loading...</li>
+    </ul>
   </div>
 
   <div class="list-section">
     <h3>Upcoming Check-outs</h3>
-    <ul id="upcomingCheckoutsList" class="item-list"><li>Loading...</li></ul>
+    <ul id="upcomingCheckoutsList" class="item-list">
+      <li class="loading-text"><div class="spinner"></div>Loading...</li>
+    </ul>
   </div>
-
-  <template id="bookingItemTemplate">
-    <li class="list-item">
-      <div><b>${bookingId}</b>: ${residentId} in ${roomId} (${status})</div>
-      <div class="list-item-buttons">
-        <button class="edit-button" 
-                data-action="openModal" 
-                data-form-type="Booking" 
-                data-id="${bookingId}">
-          Edit
-        </button>
-        <button class="delete-button" 
-                data-action="deleteBooking" 
-                data-id="${bookingId}">
-          Delete
-        </button>
-      </div>
-    </li>
-  </template>
 
 <script>
   const APP_CONTEXT = "<?= context ?>";
+  let isLoading = false;
 
-  function showLoadingSpinner() {
-    document.getElementById('recentBookingsList').innerHTML = '<li><div class="spinner"></div> Loading...</li>';
-    document.getElementById('activeResidentsList').innerHTML = '<li><div class="spinner"></div> Loading...</li>';
-    document.getElementById('upcomingCheckinsList').innerHTML = '<li><div class="spinner"></div> Loading...</li>';
-    document.getElementById('upcomingCheckoutsList').innerHTML = '<li><div class="spinner"></div> Loading...</li>';
-  }
-
-  window.onload = function() {
-    showLoadingSpinner();
+  // Initialize when DOM is ready
+  document.addEventListener('DOMContentLoaded', function() {
     initializeApp();
+  });
+
+  // Fallback for older browsers
+  window.onload = function() {
+    if (!isLoading) {
+      initializeApp();
+    }
   };
 
   function initializeApp() {
+    if (isLoading) return;
+    isLoading = true;
+    
+    showLoadingState();
+    
+    // Check if Google Apps Script is available
     if (typeof google !== 'undefined' && google.script && google.script.run) {
       loadDashboardData();
     } else {
-      setTimeout(initializeApp, 100);
+      // Retry initialization after a short delay
+      setTimeout(() => {
+        isLoading = false;
+        initializeApp();
+      }, 250);
     }
   }
 
+  function showLoadingState() {
+    const loadingHTML = '<li class="loading-text"><div class="spinner"></div>Loading...</li>';
+    document.getElementById('recentBookingsList').innerHTML = loadingHTML;
+    document.getElementById('activeResidentsList').innerHTML = loadingHTML;
+    document.getElementById('upcomingCheckinsList').innerHTML = loadingHTML;
+    document.getElementById('upcomingCheckoutsList').innerHTML = loadingHTML;
+  }
+
   function loadDashboardData() {
-    google.script.run.withSuccessHandler(populateDashboard).withFailureHandler(showError).getDashboardData();
+    google.script.run
+      .withSuccessHandler(populateDashboard)
+      .withFailureHandler(handleError)
+      .getDashboardData();
+  }
+
+  function refreshDashboard() {
+    if (isLoading) return;
+    showLoadingState();
+    loadDashboardData();
   }
 
   function populateDashboard(data) {
-    if (data.error) { return showError({ message: data.error }); }
-    document.getElementById('userEmail').textContent = data.userEmail;
-    document.getElementById('totalOccupancy').textContent = data.totalOccupancy;
-    document.getElementById('totalRevenue').textContent = data.totalRevenue;
-    document.getElementById('upcomingCheckinsCount').textContent = data.upcomingCheckins.length;
-    document.getElementById('upcomingCheckoutsCount').textContent = data.upcomingCheckouts.length;
+    isLoading = false;
     
-    const recentBookingsList = document.getElementById('recentBookingsList');
-    recentBookingsList.innerHTML = data.recentBookings.length ? data.recentBookings.map(b => `
-        <li class="list-item">
-            <div><b>${b.bookingId}</b>: ${b.residentId} in ${b.roomId} (${b.status})</div>
-            <div class="list-item-buttons">
-                <button class="edit-button" 
-                        data-action="openModal" 
-                        data-form-type="Booking" 
-                        data-id="${b.bookingId}">
-                  Edit
-                </button>
-                <button class="delete-button" 
-                        data-action="deleteBooking" 
-                        data-id="${b.bookingId}">
-                  Delete
-                </button>
-            </div>
-        </li>`
-    ).join('') : '<li>No recent bookings.</li>';
+    if (data && data.error) { 
+      return handleError({ message: data.error }); 
+    }
 
-    const activeResidentsList = document.getElementById('activeResidentsList');
-    activeResidentsList.innerHTML = data.activeResidents.length ? data.activeResidents.map(r => `
-        <li class="list-item">
-            <div><b>${r.residentId}</b>: ${r.name} (${r.contact})</div>
-            <div class="list-item-buttons">
-                <button class="edit-button" onclick="handleModalOpen('Resident', '${r.residentId}')">Edit</button>
-            </div>
-        </li>`
-    ).join('') : '<li>No active residents.</li>';
+    try {
+      // Update user info
+      document.getElementById('userEmail').textContent = data.userEmail || 'Unknown User';
+      
+      // Update metrics
+      document.getElementById('totalOccupancy').textContent = data.totalOccupancy || '0';
+      document.getElementById('totalRevenue').textContent = data.totalRevenue || '0';
+      document.getElementById('upcomingCheckinsCount').textContent = (data.upcomingCheckins && data.upcomingCheckins.length) || '0';
+      document.getElementById('upcomingCheckoutsCount').textContent = (data.upcomingCheckouts && data.upcomingCheckouts.length) || '0';
+      
+      // Update recent bookings
+      updateRecentBookings(data.recentBookings || []);
+      
+      // Update active residents
+      updateActiveResidents(data.activeResidents || []);
+      
+      // Update upcoming check-ins
+      updateUpcomingCheckins(data.upcomingCheckins || []);
+      
+      // Update upcoming check-outs
+      updateUpcomingCheckouts(data.upcomingCheckouts || []);
+      
+    } catch (error) {
+      console.error('Error populating dashboard:', error);
+      handleError({ message: 'Failed to display dashboard data' });
+    }
+  }
 
-    const upcomingCheckinsList = document.getElementById('upcomingCheckinsList');
-    upcomingCheckinsList.innerHTML = data.upcomingCheckins.length ? data.upcomingCheckins.map(i => `<li class="list-item"><b>${i.bookingId}</b>: ${i.residentId} on ${i.date}</li>`).join('') : '<li>No upcoming check-ins.</li>';
-    const upcomingCheckoutsList = document.getElementById('upcomingCheckoutsList');
-    upcomingCheckoutsList.innerHTML = data.upcomingCheckouts.length ? data.upcomingCheckouts.map(o => `<li class="list-item"><b>${o.bookingId}</b>: ${o.residentId} on ${o.date}</li>`).join('') : '<li>No upcoming check-outs.</li>';
+  function updateRecentBookings(bookings) {
+    const list = document.getElementById('recentBookingsList');
+    if (!bookings || bookings.length === 0) {
+      list.innerHTML = '<li class="list-item">No recent bookings found.</li>';
+      return;
+    }
+
+    list.innerHTML = bookings.map(booking => `
+      <li class="list-item">
+        <div class="list-item-content">
+          <strong>${booking.bookingId}</strong>: ${booking.residentId} in ${booking.roomId} 
+          <span style="color: #5f6368;">(${booking.status})</span>
+        </div>
+        <div class="list-item-buttons">
+          <button class="edit-button" onclick="handleModalOpen('booking', '${booking.bookingId}')">
+            Edit
+          </button>
+          <button class="delete-button" onclick="handleDeleteBooking('${booking.bookingId}')">
+            Delete
+          </button>
+        </div>
+      </li>
+    `).join('');
+  }
+
+  function updateActiveResidents(residents) {
+    const list = document.getElementById('activeResidentsList');
+    if (!residents || residents.length === 0) {
+      list.innerHTML = '<li class="list-item">No active residents found.</li>';
+      return;
+    }
+
+    list.innerHTML = residents.map(resident => `
+      <li class="list-item">
+        <div class="list-item-content">
+          <strong>${resident.residentId}</strong>: ${resident.name} 
+          <span style="color: #5f6368;">(${resident.contact})</span>
+        </div>
+        <div class="list-item-buttons">
+          <button class="edit-button" onclick="handleModalOpen('resident', '${resident.residentId}')">
+            Edit
+          </button>
+        </div>
+      </li>
+    `).join('');
+  }
+
+  function updateUpcomingCheckins(checkins) {
+    const list = document.getElementById('upcomingCheckinsList');
+    if (!checkins || checkins.length === 0) {
+      list.innerHTML = '<li class="list-item">No upcoming check-ins.</li>';
+      return;
+    }
+
+    list.innerHTML = checkins.map(checkin => `
+      <li class="list-item">
+        <div class="list-item-content">
+          <strong>${checkin.bookingId}</strong>: ${checkin.residentId} 
+          <span style="color: #5f6368;">on ${checkin.date}</span>
+        </div>
+      </li>
+    `).join('');
+  }
+
+  function updateUpcomingCheckouts(checkouts) {
+    const list = document.getElementById('upcomingCheckoutsList');
+    if (!checkouts || checkouts.length === 0) {
+      list.innerHTML = '<li class="list-item">No upcoming check-outs.</li>';
+      return;
+    }
+
+    list.innerHTML = checkouts.map(checkout => `
+      <li class="list-item">
+        <div class="list-item-content">
+          <strong>${checkout.bookingId}</strong>: ${checkout.residentId} 
+          <span style="color: #5f6368;">on ${checkout.date}</span>
+        </div>
+      </li>
+    `).join('');
   }
 
   function handleModalOpen(formType, recordId = null) {
-    if (APP_CONTEXT === 'WebApp') {
-      google.script.run
-        .withSuccessHandler(function(htmlContent) {
-          const modalWindow = window.open('', '_blank', 'width=550,height=650,scrollbars=yes,resizable=yes');
-          if (modalWindow) {
-            modalWindow.document.write(htmlContent);
-            modalWindow.document.close();
-            modalWindow.focus();
-          } else {
-            alert('Popup blocked! Please allow popups for this site.');
-          }
-        })
-        .withFailureHandler(showError)
-        .getModalHtml(formType, recordId);
-    } else {
-      google.script.run.withFailureHandler(showError).showModalFormInSheet(formType, recordId);
+    try {
+      if (APP_CONTEXT === 'WebApp') {
+        // Open modal in new window for web app
+        google.script.run
+          .withSuccessHandler(function(htmlContent) {
+            if (htmlContent) {
+              const modalWindow = window.open('', '_blank', 'width=600,height=700,scrollbars=yes,resizable=yes');
+              if (modalWindow) {
+                modalWindow.document.write(htmlContent);
+                modalWindow.document.close();
+                modalWindow.focus();
+              } else {
+                alert('Popup blocked! Please allow popups for this site and try again.');
+              }
+            } else {
+              handleError({ message: 'Failed to load form content' });
+            }
+          })
+          .withFailureHandler(handleError)
+          .getModalHtml(formType, recordId);
+      } else {
+        // Open modal dialog in sheet sidebar
+        google.script.run
+          .withFailureHandler(handleError)
+          .showModalFormInSheet(formType, recordId);
+      }
+    } catch (error) {
+      console.error('Error opening modal:', error);
+      handleError({ message: 'Failed to open form' });
     }
   }
 
   function handleDeleteBooking(bookingId) {
-    if (!confirm(`Are you sure you want to delete booking ${bookingId}? This action cannot be undone.`)) {
-        return;
+    if (!bookingId) {
+      handleError({ message: 'Invalid booking ID' });
+      return;
     }
+
+    if (!confirm(`Are you sure you want to delete booking ${bookingId}?\n\nThis action cannot be undone.`)) {
+      return;
+    }
+
+    // Disable delete buttons temporarily
+    const deleteButtons = document.querySelectorAll('.delete-button');
+    deleteButtons.forEach(btn => btn.disabled = true);
+
     google.script.run
-        .withSuccessHandler(function(response) {
-            if (response.status === 'success') {
-                alert(response.message);
-                loadDashboardData();
-            } else {
-                showError(response);
-            }
-        })
-        .withFailureHandler(showError)
-        .deleteBooking(bookingId);
+      .withSuccessHandler(function(response) {
+        deleteButtons.forEach(btn => btn.disabled = false);
+        
+        if (response && response.status === 'success') {
+          alert(response.message || 'Booking deleted successfully');
+          refreshDashboard();
+        } else {
+          handleError(response || { message: 'Delete operation failed' });
+        }
+      })
+      .withFailureHandler(function(error) {
+        deleteButtons.forEach(btn => btn.disabled = false);
+        handleError(error);
+      })
+      .deleteBooking(bookingId);
   }
 
   function handleSheetNavigation(sheetName) {
-    if (APP_CONTEXT === 'WebApp') {
-      alert(`To manage ${sheetName}, please open the Google Sheet directly.`);
-    } else {
-      google.script.run.withFailureHandler(showError).navigateToSheet(sheetName);
+    try {
+      if (APP_CONTEXT === 'WebApp') {
+        alert(`To manage ${sheetName}, please open the Google Sheet directly in Google Sheets.`);
+      } else {
+        google.script.run
+          .withFailureHandler(handleError)
+          .navigateToSheet(sheetName);
+      }
+    } catch (error) {
+      console.error('Error navigating to sheet:', error);
+      handleError({ message: 'Failed to navigate to sheet' });
     }
   }
 
-  function showError(error) {
-    console.error('Apps Script Error:', error);
-    alert('An error occurred: ' + error.message);
+  function handleError(error) {
+    isLoading = false;
+    console.error('Dashboard Error:', error);
+    
+    const errorMessage = error && error.message ? error.message : 'An unexpected error occurred';
+    
+    // Show error in a user-friendly way
+    const errorHTML = `<li class="list-item error-message">Error: ${errorMessage}</li>`;
+    
+    // Update all lists to show error state
+    document.getElementById('recentBookingsList').innerHTML = errorHTML;
+    document.getElementById('activeResidentsList').innerHTML = errorHTML;
+    document.getElementById('upcomingCheckinsList').innerHTML = errorHTML;
+    document.getElementById('upcomingCheckoutsList').innerHTML = errorHTML;
+    
+    // Also show a popup for critical errors
+    if (errorMessage.includes('script') || errorMessage.includes('permission')) {
+      alert('Connection Error: ' + errorMessage);
+    }
   }
+
+  // Add global error handler
+  window.onerror = function(msg, url, lineNo, columnNo, error) {
+    console.error('Global Error:', { msg, url, lineNo, columnNo, error });
+    handleError({ message: 'A JavaScript error occurred. Please refresh the page.' });
+    return false;
+  };
 </script>
 </body>
 </html>
