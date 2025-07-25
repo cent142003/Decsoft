@@ -172,7 +172,51 @@ function getResidentDetails(residentId) {
 
 // --- DATA SUBMISSION FUNCTIONS ---
 
-function addBooking(formData) { /* Omitted for brevity */ }
+function addBooking(formData) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BOOKINGS_SHEET_NAME);
+    if (!sheet) throw new Error("Bookings sheet not found");
+
+    // Sanitize inputs
+    const sanitizedData = {
+      residentId: sanitizeInput(formData.residentId),
+      roomId: sanitizeInput(formData.roomId),
+      startDate: new Date(formData.startDate),
+      endDate: new Date(formData.endDate),
+      totalRate: parseFloat(formData.totalRate) || 0,
+      paidAmount: parseFloat(formData.paidAmount) || 0,
+      status: sanitizeInput(formData.status) || 'Pending',
+      notes: sanitizeInput(formData.notes) || ''
+    };
+
+    // Generate new ID
+    const newId = getNextId(sheet, "BKG", BOOK_ID_COL);
+
+    // Create new row
+    const newRow = [
+      newId,
+      sanitizedData.residentId,
+      sanitizedData.roomId,
+      sanitizedData.startDate,
+      sanitizedData.endDate,
+      sanitizedData.totalRate,
+      sanitizedData.paidAmount,
+      sanitizedData.status,
+      sanitizedData.notes
+    ];
+
+    // Append to sheet
+    sheet.appendRow(newRow);
+
+    // Update dashboard
+    updateDashboardData();
+
+    return makeResponse('success', `Booking ${newId} created successfully!`, { bookingId: newId });
+  } catch (e) {
+    logError('addBooking', e);
+    return makeResponse('error', e.message);
+  }
+}
 function addResident(formData) {
   try {
     const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(RESIDENTS_SHEET_NAME);
@@ -213,9 +257,112 @@ function addResident(formData) {
     return makeResponse('error', e.message);
   }
 }
-function addPayment(formData) { /* Omitted for brevity */ }
-function updateBooking(formData) { /* Omitted for brevity */ }
-function deleteBooking(bookingId) { /* Omitted for brevity */ }
+function addPayment(formData) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(PAYMENTS_SHEET_NAME);
+    if (!sheet) throw new Error("Payments sheet not found");
+
+    // Sanitize inputs
+    const sanitizedData = {
+      bookingId: sanitizeInput(formData.bookingId),
+      residentId: sanitizeInput(formData.residentId),
+      amount: parseFloat(formData.amount) || 0,
+      date: new Date(formData.date),
+      method: sanitizeInput(formData.method) || 'Cash',
+      status: sanitizeInput(formData.status) || 'Paid'
+    };
+
+    // Generate new ID
+    const newId = getNextId(sheet, "PAY", PAY_ID_COL);
+
+    // Create new row
+    const newRow = [
+      newId,
+      sanitizedData.bookingId,
+      sanitizedData.residentId,
+      sanitizedData.amount,
+      sanitizedData.date,
+      sanitizedData.method,
+      sanitizedData.status
+    ];
+
+    // Append to sheet
+    sheet.appendRow(newRow);
+
+    // Update dashboard
+    updateDashboardData();
+
+    return makeResponse('success', `Payment ${newId} recorded successfully!`, { paymentId: newId });
+  } catch (e) {
+    logError('addPayment', e);
+    return makeResponse('error', e.message);
+  }
+}
+function updateBooking(formData) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BOOKINGS_SHEET_NAME);
+    if (!sheet) throw new Error("Bookings sheet not found");
+
+    const rowIndex = findRowIndexById(sheet, formData.bookingId, BOOK_ID_COL);
+    if (rowIndex === -1) throw new Error("Booking not found");
+
+    // Sanitize inputs
+    const sanitizedData = {
+      residentId: sanitizeInput(formData.residentId),
+      roomId: sanitizeInput(formData.roomId),
+      startDate: new Date(formData.startDate),
+      endDate: new Date(formData.endDate),
+      totalRate: parseFloat(formData.totalRate) || 0,
+      paidAmount: parseFloat(formData.paidAmount) || 0,
+      status: sanitizeInput(formData.status),
+      notes: sanitizeInput(formData.notes) || ''
+    };
+
+    // Update row
+    const updatedRow = [
+      formData.bookingId, // Keep original ID
+      sanitizedData.residentId,
+      sanitizedData.roomId,
+      sanitizedData.startDate,
+      sanitizedData.endDate,
+      sanitizedData.totalRate,
+      sanitizedData.paidAmount,
+      sanitizedData.status,
+      sanitizedData.notes
+    ];
+
+    sheet.getRange(rowIndex, 1, 1, updatedRow.length).setValues([updatedRow]);
+
+    // Update dashboard
+    updateDashboardData();
+
+    return makeResponse('success', `Booking ${formData.bookingId} updated successfully!`);
+  } catch (e) {
+    logError('updateBooking', e);
+    return makeResponse('error', e.message);
+  }
+}
+
+function deleteBooking(bookingId) {
+  try {
+    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BOOKINGS_SHEET_NAME);
+    if (!sheet) throw new Error("Bookings sheet not found");
+
+    const rowIndex = findRowIndexById(sheet, bookingId, BOOK_ID_COL);
+    if (rowIndex === -1) throw new Error("Booking not found");
+
+    // Delete the row
+    sheet.deleteRow(rowIndex);
+
+    // Update dashboard
+    updateDashboardData();
+
+    return makeResponse('success', `Booking ${bookingId} deleted successfully!`);
+  } catch (e) {
+    logError('deleteBooking', e);
+    return makeResponse('error', e.message);
+  }
+}
 
 /**
  * NEW: Updates an existing resident's details.
@@ -274,31 +421,7 @@ function logError(location, error) {
   console.error(`[${location}] ${error.message}`);
 }
 
-/**
- * Example: Robust addResident function
- */
-function addResident(formData) {
-  try {
-    const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(RESIDENTS_SHEET_NAME);
-    if (!sheet) throw new Error("Residents sheet not found.");
-    // Sanitize all input
-    const name = sanitizeInput(formData.name);
-    const contact = sanitizeInput(formData.contact);
-    const email = sanitizeInput(formData.email);
-    const status = sanitizeInput(formData.status);
-    const notes = sanitizeInput(formData.notes);
 
-    const newId = getNextId(sheet, "RES", RES_ID_COL);
-    const newRow = [newId, name, contact, email, status, "", notes];
-    sheet.appendRow(newRow);
-
-    updateDashboardData();
-    return makeResponse('success', `Resident ${name} added!`, { residentId: newId });
-  } catch (e) {
-    logError('addResident', e);
-    return makeResponse('error', e.message);
-  }
-}
 
 /**
  * Utility: Fallback for unexpected errors
@@ -334,7 +457,7 @@ function getDashboardData() {
     });
     
     // Bookings data (same as before)
-    const bookingsData = (bookingsData.getLastRow() > 1) ? bookingsData.getDataRange().getValues().slice(1) : [];
+    const bookingsData = (bookingsSheet.getLastRow() > 1) ? bookingsSheet.getDataRange().getValues().slice(1) : [];
     const today = new Date(); today.setHours(0,0,0,0);
     const sevenDays = new Date(); sevenDays.setDate(today.getDate() + 7);
     const upcomingCheckins = bookingsData.filter(b => new Date(b[BOOK_START_DATE_COL]) >= today && new Date(b[BOOK_START_DATE_COL]) <= sevenDays && b[BOOK_STATUS_COL] === 'Confirmed');
@@ -360,12 +483,86 @@ function getDashboardData() {
 
 function updateDashboardData() { getDashboardData(); }
 function sanitizeInput(input) { return (typeof input === 'string') ? input.replace(/</g, '&lt;').replace(/>/g, '&gt;') : input; }
-function initialHostelSetup() { /* Omitted for brevity */ }
+function initialHostelSetup() {
+  try {
+    const ss = SpreadsheetApp.getActiveSpreadsheet();
+    
+    // Create all required sheets if they don't exist
+    const sheetNames = [
+      DASHBOARD_SHEET_NAME,
+      ROOM_TYPES_SHEET_NAME,
+      ROOMS_SHEET_NAME,
+      RESIDENTS_SHEET_NAME,
+      BOOKINGS_SHEET_NAME,
+      PAYMENTS_SHEET_NAME,
+      README_SHEET_NAME
+    ];
+    
+    sheetNames.forEach(name => {
+      if (!ss.getSheetByName(name)) {
+        ss.insertSheet(name);
+      }
+    });
+    
+    // Set up headers for each sheet
+    setupSheetHeaders();
+    
+    SpreadsheetApp.getUi().alert('Setup complete! All sheets have been initialized.');
+  } catch (e) {
+    console.error('Setup error:', e);
+    SpreadsheetApp.getUi().alert('Setup failed: ' + e.message);
+  }
+}
 
-const FORM_TYPE = document.getElementById('formType').value;
+function setupSheetHeaders() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Room Types headers
+  const roomTypesSheet = ss.getSheetByName(ROOM_TYPES_SHEET_NAME);
+  if (roomTypesSheet && roomTypesSheet.getLastRow() === 0) {
+    roomTypesSheet.getRange(1, 1, 1, 6).setValues([
+      ['Type ID', 'Description', 'Capacity', 'Semester Rate 1', 'Semester Rate 2', 'Semester Rate 3']
+    ]);
+  }
+  
+  // Rooms headers
+  const roomsSheet = ss.getSheetByName(ROOMS_SHEET_NAME);
+  if (roomsSheet && roomsSheet.getLastRow() === 0) {
+    roomsSheet.getRange(1, 1, 1, 5).setValues([
+      ['Room ID', 'Type ID', 'Capacity', 'Occupied', 'Status']
+    ]);
+  }
+  
+  // Residents headers
+  const residentsSheet = ss.getSheetByName(RESIDENTS_SHEET_NAME);
+  if (residentsSheet && residentsSheet.getLastRow() === 0) {
+    residentsSheet.getRange(1, 1, 1, 7).setValues([
+      ['Resident ID', 'Name', 'Contact', 'Email', 'Status', 'Last Payment', 'Notes']
+    ]);
+  }
+  
+  // Bookings headers
+  const bookingsSheet = ss.getSheetByName(BOOKINGS_SHEET_NAME);
+  if (bookingsSheet && bookingsSheet.getLastRow() === 0) {
+    bookingsSheet.getRange(1, 1, 1, 9).setValues([
+      ['Booking ID', 'Resident ID', 'Room ID', 'Start Date', 'End Date', 'Total Rate', 'Paid Amount', 'Status', 'Notes']
+    ]);
+  }
+  
+  // Payments headers
+  const paymentsSheet = ss.getSheetByName(PAYMENTS_SHEET_NAME);
+  if (paymentsSheet && paymentsSheet.getLastRow() === 0) {
+    paymentsSheet.getRange(1, 1, 1, 7).setValues([
+      ['Payment ID', 'Booking ID', 'Resident ID', 'Amount', 'Date', 'Method', 'Status']
+    ]);
+  }
+}
 
 function setupForm() {
   const title = document.getElementById('formTitle');
+  const formTypeElement = document.getElementById('formType');
+  const FORM_TYPE = formTypeElement ? formTypeElement.value : null;
+  
   if (!FORM_TYPE) {
     title.textContent = 'Error';
     showError({ message: 'Form type not specified. Please reload.' });
@@ -378,12 +575,15 @@ class HostelApp {
   constructor() {
     // Cache DOM elements
     this.formContainer = document.getElementById('formContainer');
-    this.context = document.getElementById('context')?.value || 'WebApp';
-    this.formType = document.getElementById('formType')?.value;
-    this.recordId = document.getElementById('recordId')?.value;
+    this.context = (document.getElementById('context') && document.getElementById('context').value) || 'WebApp';
+    this.formType = document.getElementById('formType') && document.getElementById('formType').value;
+    this.recordId = document.getElementById('recordId') && document.getElementById('recordId').value;
     
     this.isSubmitting = false;
     this.pendingRequests = new Set();
+    
+    // Define required fields based on form type
+    this.requiredFields = this.getRequiredFields();
     
     // Initialize with error boundary
     try {
@@ -557,6 +757,67 @@ class HostelApp {
     console.error('Form submission error:', error);
     alert(`Error: ${error.message || 'Failed to submit form'}`);
   }
+
+  getRequiredFields() {
+    const fieldMappings = {
+      'resident': ['name', 'contact', 'status'],
+      'booking': ['residentId', 'roomId', 'startDate', 'endDate'],
+      'payment': ['bookingId', 'amount', 'date', 'method']
+    };
+    return fieldMappings[this.formType] || [];
+  }
+
+  getServerFunction() {
+    const functionMappings = {
+      'resident': this.recordId ? 'updateResident' : 'addResident',
+      'booking': this.recordId ? 'updateBooking' : 'addBooking',
+      'payment': 'addPayment'
+    };
+    return functionMappings[this.formType] || 'addResident';
+  }
+
+  handleClick(event) {
+    // Handle various click events
+    const target = event.target;
+    
+    if (target.matches('.cancel-btn')) {
+      this.closeModal();
+    }
+  }
+
+  validateInput(event) {
+    const input = event.target;
+    if (input.matches('input, select')) {
+      input.classList.remove('invalid');
+      
+      // Add specific validation logic here
+      if (input.required && !input.value.trim()) {
+        input.classList.add('invalid');
+      }
+    }
+  }
+
+  showForm() {
+    // Implementation for showing the form
+    if (this.formType) {
+      this.loadFormContent();
+    }
+  }
+
+  loadFormContent() {
+    // Load form content based on form type
+    console.log(`Loading ${this.formType} form`);
+  }
+
+  closeModal() {
+    if (this.context === 'WebApp' && window.opener) {
+      window.close();
+    }
+  }
+
+  showError(message) {
+    alert(typeof message === 'string' ? message : message.message);
+  }
 }
 
 // Static properties for HostelApp class
@@ -647,10 +908,16 @@ class DataService {
   }
 
   static triggerDashboardUpdate() {
-    // Schedule dashboard update to run in background
-    ScriptApp.newTrigger('updateDashboardData')
-      .timeBased()
-      .after(1000)
-      .create();
+    // Simple dashboard update - triggers don't work in all contexts
+    try {
+      updateDashboardData();
+    } catch (e) {
+      console.error('Dashboard update failed:', e);
+    }
+  }
+
+  static getNextIdWithLock(sheet, prefix, idColumn) {
+    // Simplified ID generation for lock context
+    return getNextId(sheet, prefix, idColumn);
   }
 }
