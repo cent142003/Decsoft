@@ -95,15 +95,61 @@ function getResidentIDs() {
   if (!sheet || sheet.getLastRow() < 2) return [];
   return sheet.getRange(2, RES_ID_COL + 1, sheet.getLastRow() - 1, 1).getValues().flat().map(String).filter(id => id);
 }
+
+function getResidentsForDropdown() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(RESIDENTS_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 7).getValues();
+  return data.filter(row => row[0] && row[RES_STATUS_COL] === 'Active').map(row => ({
+    id: row[RES_ID_COL],
+    name: row[RES_NAME_COL],
+    contact: row[RES_CONTACT_COL],
+    display: `${row[RES_ID_COL]} - ${row[RES_NAME_COL]}`
+  }));
+}
+
 function getRoomIDs() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ROOMS_SHEET_NAME);
   if (!sheet || sheet.getLastRow() < 2) return [];
   return sheet.getRange(2, ROOM_ID_COL + 1, sheet.getLastRow() - 1, 1).getValues().flat().map(String).filter(id => id);
 }
+
+function getRoomsForDropdown() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(ROOMS_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 5).getValues();
+  return data.filter(row => row[0] && row[4] !== 'Maintenance').map(row => ({
+    id: row[ROOM_ID_COL],
+    typeId: row[ROOM_TYPE_ID_COL],
+    capacity: row[ROOM_CAPACITY_COL],
+    occupied: row[ROOM_OCCUPIED_COL],
+    status: row[ROOM_STATUS_COL],
+    display: `${row[ROOM_ID_COL]} (${row[ROOM_STATUS_COL]}) - ${row[ROOM_CAPACITY_COL] - row[ROOM_OCCUPIED_COL]} available`
+  }));
+}
+
 function getBookingIDs() {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BOOKINGS_SHEET_NAME);
   if (!sheet || sheet.getLastRow() < 2) return [];
   return sheet.getRange(2, BOOK_ID_COL + 1, sheet.getLastRow() - 1, 1).getValues().flat().map(String).filter(id => id);
+}
+
+function getActiveBookingsForDropdown() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(BOOKINGS_SHEET_NAME);
+  if (!sheet || sheet.getLastRow() < 2) return [];
+  
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 9).getValues();
+  return data.filter(row => row[0] && ['Confirmed', 'Checked-In'].includes(row[BOOK_STATUS_COL])).map(row => ({
+    id: row[BOOK_ID_COL],
+    residentId: row[BOOK_RESIDENT_ID_COL],
+    roomId: row[BOOK_ROOM_ID_COL],
+    totalRate: row[BOOK_TOTAL_RATE_COL],
+    paidAmount: row[BOOK_PAID_AMOUNT_COL],
+    balance: row[BOOK_TOTAL_RATE_COL] - row[BOOK_PAID_AMOUNT_COL],
+    display: `${row[BOOK_ID_COL]} - ${row[BOOK_RESIDENT_ID_COL]} (Balance: ${row[BOOK_TOTAL_RATE_COL] - row[BOOK_PAID_AMOUNT_COL]})`
+  }));
 }
 function getSemesterRatesForRoom(roomId) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -507,10 +553,52 @@ function initialHostelSetup() {
     // Set up headers for each sheet
     setupSheetHeaders();
     
-    SpreadsheetApp.getUi().alert('Setup complete! All sheets have been initialized.');
+    // Add sample data if sheets are empty
+    createSampleData();
+    
+    SpreadsheetApp.getUi().alert('Setup complete! All sheets have been initialized with sample data.');
   } catch (e) {
     console.error('Setup error:', e);
     SpreadsheetApp.getUi().alert('Setup failed: ' + e.message);
+  }
+}
+
+function createSampleData() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  
+  // Add sample room types
+  const roomTypesSheet = ss.getSheetByName(ROOM_TYPES_SHEET_NAME);
+  if (roomTypesSheet && roomTypesSheet.getLastRow() <= 1) {
+    roomTypesSheet.getRange(2, 1, 3, 6).setValues([
+      ['RT001', 'Single Room', 1, 800, 750, 700],
+      ['RT002', 'Double Room', 2, 1200, 1100, 1000],
+      ['RT003', 'Shared Room', 4, 600, 550, 500]
+    ]);
+  }
+  
+  // Add sample rooms
+  const roomsSheet = ss.getSheetByName(ROOMS_SHEET_NAME);
+  if (roomsSheet && roomsSheet.getLastRow() <= 1) {
+    roomsSheet.getRange(2, 1, 6, 5).setValues([
+      ['R001', 'RT001', 1, 0, 'Available'],
+      ['R002', 'RT001', 1, 0, 'Available'],
+      ['R003', 'RT002', 2, 0, 'Available'],
+      ['R004', 'RT002', 2, 1, 'Partially Occupied'],
+      ['R005', 'RT003', 4, 2, 'Available'],
+      ['R006', 'RT003', 4, 0, 'Available']
+    ]);
+  }
+  
+  // Add sample residents
+  const residentsSheet = ss.getSheetByName(RESIDENTS_SHEET_NAME);
+  if (residentsSheet && residentsSheet.getLastRow() <= 1) {
+    residentsSheet.getRange(2, 1, 5, 7).setValues([
+      ['RES001', 'John Doe', '+233241234567', 'john.doe@email.com', 'Active', new Date(), 'New student'],
+      ['RES002', 'Jane Smith', '+233541234567', 'jane.smith@email.com', 'Active', new Date(), 'Returning student'],
+      ['RES003', 'Mike Johnson', '+233241234568', 'mike.j@email.com', 'Active', new Date(), ''],
+      ['RES004', 'Sarah Wilson', '+233541234568', 'sarah.w@email.com', 'Inactive', new Date(), 'Graduated'],
+      ['RES005', 'David Brown', '+233241234569', 'david.b@email.com', 'Active', new Date(), 'Transfer student']
+    ]);
   }
 }
 

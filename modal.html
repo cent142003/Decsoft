@@ -391,6 +391,8 @@
 
       async initialize() {
         try {
+          console.log('Modal initializing with form type:', this.formType, 'Record ID:', this.recordId);
+          
           if (!this.formType) {
             throw new Error('Form type not specified');
           }
@@ -415,11 +417,11 @@
           // Wait for Google Apps Script
           await this.waitForGoogleScript();
           
-          // Load dropdown data first
-          await this.loadDropdownData();
-          
-          // Show correct form
+          // Show correct form first
           await this.showForm();
+          
+          // Then load dropdown data
+          await this.loadDropdownData();
           
           // Setup event listeners
           this.setupEventListeners();
@@ -451,25 +453,35 @@
 
       async loadDropdownData() {
         try {
+          console.log('Loading dropdown data for form type:', this.formType);
+          
           // Load residents for booking and payment forms
           if (this.formType === 'booking' || this.formType === 'payment') {
-            const residents = await this.serverCall('getResidentIDs');
-            this.populateSelect('residentId', residents);
+            console.log('Loading residents...');
+            const residents = await this.serverCall('getResidentsForDropdown');
+            console.log('Residents loaded:', residents);
+            this.populateSelectWithObjects('residentId', residents);
           }
           
           // Load rooms for booking form
           if (this.formType === 'booking') {
-            const rooms = await this.serverCall('getRoomIDs');
-            this.populateSelect('roomId', rooms);
+            console.log('Loading rooms...');
+            const rooms = await this.serverCall('getRoomsForDropdown');
+            console.log('Rooms loaded:', rooms);
+            this.populateSelectWithObjects('roomId', rooms);
           }
           
           // Load bookings for payment form
           if (this.formType === 'payment') {
-            const bookings = await this.serverCall('getBookingIDs');
-            this.populateSelect('bookingId', bookings);
+            console.log('Loading bookings...');
+            const bookings = await this.serverCall('getActiveBookingsForDropdown');
+            console.log('Bookings loaded:', bookings);
+            this.populateSelectWithObjects('bookingId', bookings);
           }
+          
+          console.log('Dropdown data loading completed');
         } catch (error) {
-          console.warn('Failed to load dropdown data:', error);
+          console.error('Failed to load dropdown data:', error);
           // Continue anyway - user can still enter data manually
         }
       }
@@ -492,6 +504,29 @@
         });
       }
 
+      populateSelectWithObjects(elementId, options) {
+        const select = document.getElementById(elementId);
+        if (!select || !Array.isArray(options)) return;
+        
+        // Keep the first option (placeholder)
+        const firstOption = select.querySelector('option');
+        select.innerHTML = '';
+        if (firstOption) select.appendChild(firstOption);
+        
+        // Add options from objects
+        options.forEach(option => {
+          const optionElement = document.createElement('option');
+          optionElement.value = option.id;
+          optionElement.textContent = option.display;
+          // Store additional data as data attributes
+          if (option.residentId) optionElement.dataset.residentId = option.residentId;
+          if (option.balance !== undefined) optionElement.dataset.balance = option.balance;
+          if (option.totalRate !== undefined) optionElement.dataset.totalRate = option.totalRate;
+          if (option.paidAmount !== undefined) optionElement.dataset.paidAmount = option.paidAmount;
+          select.appendChild(optionElement);
+        });
+      }
+
       async showForm() {
         // Hide loading state
         document.getElementById('loadingState').hidden = true;
@@ -499,7 +534,7 @@
         // Show appropriate form
         const formElement = document.getElementById(`${this.formType.toLowerCase()}Form`);
         if (!formElement) {
-          throw new Error(`Invalid form type: ${this.formType}`);
+          throw new Error(`Invalid form type: ${this.formType}. Available forms: booking, resident, payment`);
         }
         
         formElement.hidden = false;
@@ -507,10 +542,14 @@
         // Update title
         const titleElement = formElement.querySelector('h2');
         if (titleElement) {
+          const formTypeName = this.formType.charAt(0).toUpperCase() + this.formType.slice(1);
           titleElement.textContent = this.recordId ? 
-            `Edit ${this.formType} (${this.recordId})` : 
-            `New ${this.formType}`;
+            `Edit ${formTypeName} (${this.recordId})` : 
+            `New ${formTypeName}`;
         }
+        
+        // Update page title
+        document.title = `Jeffston Hostels - ${this.formType.charAt(0).toUpperCase() + this.formType.slice(1)} Form`;
         
         // Set today's date for date fields
         this.setDefaultDates(formElement);
@@ -592,20 +631,26 @@
       setupPaymentFormHandlers() {
         const bookingSelect = document.getElementById('bookingId');
         const residentInput = document.getElementById('paymentResidentId');
+        const amountInput = document.getElementById('amount');
         
         if (bookingSelect && residentInput) {
-          bookingSelect.addEventListener('change', async () => {
-            if (bookingSelect.value) {
-              try {
-                const booking = await this.serverCall('getBookingDetails', bookingSelect.value);
-                if (booking) {
-                  residentInput.value = booking.residentId || '';
+          bookingSelect.addEventListener('change', () => {
+            const selectedOption = bookingSelect.options[bookingSelect.selectedIndex];
+            
+            if (selectedOption && selectedOption.value) {
+              // Use data from the dropdown
+              residentInput.value = selectedOption.dataset.residentId || '';
+              
+              // Pre-fill amount with outstanding balance
+              if (amountInput && selectedOption.dataset.balance) {
+                const balance = parseFloat(selectedOption.dataset.balance);
+                if (balance > 0) {
+                  amountInput.value = balance.toFixed(2);
                 }
-              } catch (error) {
-                console.error('Error getting booking details:', error);
               }
             } else {
               residentInput.value = '';
+              if (amountInput) amountInput.value = '';
             }
           });
         }
