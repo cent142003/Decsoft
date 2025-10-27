@@ -5,79 +5,433 @@
   <base target="_top">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="Jeffston Hostels Management System">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
   
-  <!-- Preconnect to external resources -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <title>Jeffston Hostels - Form</title>
   
   <!-- Critical CSS inline for faster rendering -->
   <style>
-    .form-container { opacity: 0; transition: opacity 0.3s; }
-    .form-container.loaded { opacity: 1; }
-    .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid #eee; border-top: 3px solid #1a73e8; border-radius: 50%; animation: spin 1s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .error { color: #d93025; }
-    .invalid { border-color: #d93025; }
-    [hidden] { display: none !important; }
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Google Sans', 'Roboto', Arial, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+      color: #3c4043;
+      line-height: 1.5;
+    }
+    
+    .form-container { 
+      opacity: 0; 
+      transition: opacity 0.3s ease;
+      max-width: 600px;
+      margin: 0 auto;
+      background: white;
+      padding: 24px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .form-container.loaded { 
+      opacity: 1; 
+    }
+    
+    h2 {
+      color: #1a73e8;
+      margin-top: 0;
+      margin-bottom: 24px;
+      font-size: 24px;
+      font-weight: 500;
+      text-align: center;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 500;
+      color: #3c4043;
+    }
+    
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border: 1px solid #dadce0;
+      border-radius: 4px;
+      font-size: 14px;
+      background: white;
+      transition: border-color 0.2s ease;
+    }
+    
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #1a73e8;
+      box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
+    }
+    
+    .invalid {
+      border-color: #d93025 !important;
+      box-shadow: 0 0 0 2px rgba(217, 48, 37, 0.2) !important;
+    }
+    
+    .error-message {
+      color: #d93025;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    
+    .form-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e8eaed;
+    }
+    
+    button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      min-width: 80px;
+    }
+    
+    button[type="submit"] {
+      background-color: #1a73e8;
+      color: white;
+    }
+    
+    button[type="submit"]:hover {
+      background-color: #1557b0;
+    }
+    
+    button[type="submit"]:disabled {
+      background-color: #dadce0;
+      cursor: not-allowed;
+    }
+    
+    .cancel-btn {
+      background-color: #f1f3f4;
+      color: #5f6368;
+      border: 1px solid #dadce0;
+    }
+    
+    .cancel-btn:hover {
+      background-color: #e8eaed;
+    }
+    
+    .spinner { 
+      display: inline-block; 
+      width: 16px; 
+      height: 16px; 
+      border: 2px solid #eee; 
+      border-top: 2px solid #1a73e8; 
+      border-radius: 50%; 
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin { 
+      to { transform: rotate(360deg); } 
+    }
+    
+    .error-state {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    
+    .error-state h2 {
+      color: #d93025;
+    }
+    
+    .loading-state {
+      text-align: center;
+      padding: 40px 20px;
+    }
+    
+    .retry-btn {
+      background-color: #1a73e8;
+      color: white;
+      margin-top: 16px;
+    }
+    
+    .retry-btn:hover {
+      background-color: #1557b0;
+    }
+    
+    [hidden] { 
+      display: none !important; 
+    }
+    
+    /* Responsive design */
+    @media (max-width: 480px) {
+      body {
+        padding: 10px;
+      }
+      
+      .form-container {
+        padding: 16px;
+      }
+      
+      .form-buttons {
+        flex-direction: column;
+      }
+      
+      button {
+        width: 100%;
+      }
+    }
   </style>
-  
-  <!-- Non-critical CSS deferred -->
-  <link rel="stylesheet" href="css/styles.css" media="print" onload="this.media='all'">
 </head>
 <body>
   <div id="formContainer" class="form-container">
     <!-- State management -->
-    <input type="hidden" id="formType" value="<?!= formTypeToLoad ?>" data-required="true">
-    <input type="hidden" id="recordId" value="<?!= recordId ?>">
-    <input type="hidden" id="context" value="<?!= context ?>">
+    <input type="hidden" id="formType" value="<?= formTypeToLoad ?>" data-required="true">
+    <input type="hidden" id="recordId" value="<?= recordId ?>">
+    <input type="hidden" id="context" value="<?= context ?>">
     
     <!-- Loading state -->
-    <div id="loadingState">
+    <div id="loadingState" class="loading-state">
       <h2 id="formTitle">Loading Form...</h2>
       <div class="spinner"></div>
+      <p>Please wait while we prepare your form...</p>
     </div>
 
     <!-- Error state -->
-    <div id="errorState" hidden>
-      <h2 class="error">Error Loading Form</h2>
-      <p id="errorMessage"></p>
-      <button onclick="retryLoad()">Retry</button>
+    <div id="errorState" class="error-state" hidden>
+      <h2>Error Loading Form</h2>
+      <p id="errorMessage">Something went wrong. Please try again.</p>
+      <button class="retry-btn" onclick="retryLoad()">🔄 Retry</button>
     </div>
 
-    <!-- Dynamic forms -->
-    <div id="bookingForm" hidden><?!= include('bookingForm'); ?></div>
-    <div id="residentForm" hidden><?!= include('residentForm'); ?></div>
-    <div id="paymentForm" hidden><?!= include('paymentForm'); ?></div>
+    <!-- Booking Form -->
+    <div id="bookingForm" hidden>
+      <h2>Booking Form</h2>
+      <form>
+        <div class="form-group">
+          <label for="residentId">Resident ID *</label>
+          <select id="residentId" data-field="residentId" required>
+            <option value="">Select a resident...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="roomId">Room ID *</label>
+          <select id="roomId" data-field="roomId" required>
+            <option value="">Select a room...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="startDate">Start Date *</label>
+          <input type="date" id="startDate" data-field="startDate" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="endDate">End Date *</label>
+          <input type="date" id="endDate" data-field="endDate" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="totalRate">Total Rate *</label>
+          <input type="number" id="totalRate" data-field="totalRate" step="0.01" min="0" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="paidAmount">Paid Amount</label>
+          <input type="number" id="paidAmount" data-field="paidAmount" step="0.01" min="0" value="0">
+        </div>
+        
+        <div class="form-group">
+          <label for="status">Status *</label>
+          <select id="status" data-field="status" required>
+            <option value="Pending">Pending</option>
+            <option value="Confirmed">Confirmed</option>
+            <option value="Checked-In">Checked-In</option>
+            <option value="Checked-Out">Checked-Out</option>
+            <option value="Cancelled">Cancelled</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="notes">Notes</label>
+          <textarea id="notes" data-field="notes" rows="3" placeholder="Additional notes..."></textarea>
+        </div>
+        
+        <div class="form-buttons">
+          <button type="button" class="cancel-btn" onclick="handleClose()">Cancel</button>
+          <button type="submit">Submit</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Resident Form -->
+    <div id="residentForm" hidden>
+      <h2>Resident Form</h2>
+      <form>
+        <div class="form-group">
+          <label for="name">Full Name *</label>
+          <input type="text" id="name" data-field="name" required placeholder="Enter full name">
+        </div>
+        
+        <div class="form-group">
+          <label for="contact">Contact Number *</label>
+          <input type="tel" id="contact" data-field="contact" required placeholder="Phone number">
+        </div>
+        
+        <div class="form-group">
+          <label for="email">Email Address</label>
+          <input type="email" id="email" data-field="email" placeholder="email@example.com">
+        </div>
+        
+        <div class="form-group">
+          <label for="residentStatus">Status *</label>
+          <select id="residentStatus" data-field="status" required>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+            <option value="Suspended">Suspended</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="residentNotes">Notes</label>
+          <textarea id="residentNotes" data-field="notes" rows="3" placeholder="Additional notes about the resident..."></textarea>
+        </div>
+        
+        <div class="form-buttons">
+          <button type="button" class="cancel-btn" onclick="handleClose()">Cancel</button>
+          <button type="submit">Submit</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Payment Form -->
+    <div id="paymentForm" hidden>
+      <h2>Payment Form</h2>
+      <form>
+        <div class="form-group">
+          <label for="bookingId">Booking ID *</label>
+          <select id="bookingId" data-field="bookingId" required>
+            <option value="">Select a booking...</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="paymentResidentId">Resident ID *</label>
+          <input type="text" id="paymentResidentId" data-field="residentId" required readonly>
+        </div>
+        
+        <div class="form-group">
+          <label for="amount">Amount *</label>
+          <input type="number" id="amount" data-field="amount" step="0.01" min="0" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="date">Payment Date *</label>
+          <input type="date" id="date" data-field="date" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="method">Payment Method *</label>
+          <select id="method" data-field="method" required>
+            <option value="Cash">Cash</option>
+            <option value="Bank Transfer">Bank Transfer</option>
+            <option value="Mobile Money">Mobile Money</option>
+            <option value="Card">Card</option>
+            <option value="Cheque">Cheque</option>
+          </select>
+        </div>
+        
+        <div class="form-group">
+          <label for="paymentStatus">Status *</label>
+          <select id="paymentStatus" data-field="status" required>
+            <option value="Paid">Paid</option>
+            <option value="Pending">Pending</option>
+            <option value="Failed">Failed</option>
+          </select>
+        </div>
+        
+        <div class="form-buttons">
+          <button type="button" class="cancel-btn" onclick="handleClose()">Cancel</button>
+          <button type="submit">Submit</button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Core application script -->
   <script>
     class ModalManager {
-      static LOAD_TIMEOUT = 10000; // 10 seconds
-      static RETRY_ATTEMPTS = 3;
+      static LOAD_TIMEOUT = 15000; // 15 seconds
+      static RETRY_ATTEMPTS = 5;
       
       constructor() {
-        this.formType = document.getElementById('formType').value;
-        this.recordId = document.getElementById('recordId').value;
-        this.context = document.getElementById('context').value;
+        this.formType = document.getElementById('formType')?.value;
+        this.recordId = document.getElementById('recordId')?.value;
+        this.context = document.getElementById('context')?.value || 'WebApp';
         this.container = document.getElementById('formContainer');
         this.attempts = 0;
+        this.isSubmitting = false;
         
         // Bind methods
         this.handleSubmit = this.handleSubmit.bind(this);
         this.handleClose = this.handleClose.bind(this);
+        this.retryLoad = this.retryLoad.bind(this);
       }
 
       async initialize() {
         try {
+          console.log('Modal initializing with form type:', this.formType, 'Record ID:', this.recordId);
+          
+          // ✅ Additional force script context initialization
+          if (typeof google !== 'undefined' && google.script && google.script.url) {
+            try {
+              google.script.url.getLocation(() => {});
+            } catch (e) {
+              console.log('Additional getLocation call not available');
+            }
+          }
+          
+          if (!this.formType) {
+            throw new Error('Form type not specified');
+          }
+          
+          // Test communication with parent window
+          if (window.opener) {
+            try {
+              if (typeof window.opener.testCommunication === 'function') {
+                const testResult = window.opener.testCommunication();
+                console.log('Parent window communication test:', testResult);
+              }
+            } catch (error) {
+              console.warn('Parent window communication test failed:', error);
+            }
+          }
+          
           // Start loading timeout
-          this.loadTimeout = setTimeout(() => this.handleError('Loading timeout'), ModalManager.LOAD_TIMEOUT);
+          this.loadTimeout = setTimeout(() => {
+            this.handleError('Loading timeout - please check your connection and try again');
+          }, ModalManager.LOAD_TIMEOUT);
           
           // Wait for Google Apps Script
           await this.waitForGoogleScript();
           
-          // Show correct form
+          // Show correct form first
           await this.showForm();
+          
+          // Then load dropdown data
+          await this.loadDropdownData();
           
           // Setup event listeners
           this.setupEventListeners();
@@ -87,6 +441,7 @@
           
           clearTimeout(this.loadTimeout);
         } catch (error) {
+          console.error('Initialization error:', error);
           this.handleError(error);
         }
       }
@@ -95,14 +450,96 @@
         return new Promise((resolve, reject) => {
           const check = () => {
             if (typeof google !== 'undefined' && google.script && google.script.run) {
+              // ✅ Force script context to load fully - fixes "stuck on loading" issue
+              try {
+                google.script.url.getLocation(() => {});
+              } catch (e) {
+                console.log('getLocation not available, continuing anyway');
+              }
               resolve();
             } else if (this.attempts++ < ModalManager.RETRY_ATTEMPTS) {
-              setTimeout(check, 100);
+              setTimeout(check, 200);
             } else {
-              reject(new Error('Failed to load Google Apps Script'));
+              reject(new Error('Failed to connect to Google Apps Script. Please refresh and try again.'));
             }
           };
           check();
+        });
+      }
+
+      async loadDropdownData() {
+        try {
+          console.log('Loading dropdown data for form type:', this.formType);
+          
+          // Load residents for booking and payment forms
+          if (this.formType === 'booking' || this.formType === 'payment') {
+            console.log('Loading residents...');
+            const residents = await this.serverCall('getResidentsForDropdown');
+            console.log('Residents loaded:', residents);
+            this.populateSelectWithObjects('residentId', residents);
+          }
+          
+          // Load rooms for booking form
+          if (this.formType === 'booking') {
+            console.log('Loading rooms...');
+            const rooms = await this.serverCall('getRoomsForDropdown');
+            console.log('Rooms loaded:', rooms);
+            this.populateSelectWithObjects('roomId', rooms);
+          }
+          
+          // Load bookings for payment form
+          if (this.formType === 'payment') {
+            console.log('Loading bookings...');
+            const bookings = await this.serverCall('getActiveBookingsForDropdown');
+            console.log('Bookings loaded:', bookings);
+            this.populateSelectWithObjects('bookingId', bookings);
+          }
+          
+          console.log('Dropdown data loading completed');
+        } catch (error) {
+          console.error('Failed to load dropdown data:', error);
+          // Continue anyway - user can still enter data manually
+        }
+      }
+
+      populateSelect(elementId, options) {
+        const select = document.getElementById(elementId);
+        if (!select || !Array.isArray(options)) return;
+        
+        // Keep the first option (placeholder)
+        const firstOption = select.querySelector('option');
+        select.innerHTML = '';
+        if (firstOption) select.appendChild(firstOption);
+        
+        // Add options
+        options.forEach(option => {
+          const optionElement = document.createElement('option');
+          optionElement.value = option;
+          optionElement.textContent = option;
+          select.appendChild(optionElement);
+        });
+      }
+
+      populateSelectWithObjects(elementId, options) {
+        const select = document.getElementById(elementId);
+        if (!select || !Array.isArray(options)) return;
+        
+        // Keep the first option (placeholder)
+        const firstOption = select.querySelector('option');
+        select.innerHTML = '';
+        if (firstOption) select.appendChild(firstOption);
+        
+        // Add options from objects
+        options.forEach(option => {
+          const optionElement = document.createElement('option');
+          optionElement.value = option.id;
+          optionElement.textContent = option.display;
+          // Store additional data as data attributes
+          if (option.residentId) optionElement.dataset.residentId = option.residentId;
+          if (option.balance !== undefined) optionElement.dataset.balance = option.balance;
+          if (option.totalRate !== undefined) optionElement.dataset.totalRate = option.totalRate;
+          if (option.paidAmount !== undefined) optionElement.dataset.paidAmount = option.paidAmount;
+          select.appendChild(optionElement);
         });
       }
 
@@ -112,12 +549,26 @@
         
         // Show appropriate form
         const formElement = document.getElementById(`${this.formType.toLowerCase()}Form`);
-        if (!formElement) throw new Error('Invalid form type');
+        if (!formElement) {
+          throw new Error(`Invalid form type: ${this.formType}. Available forms: booking, resident, payment`);
+        }
         
         formElement.hidden = false;
         
         // Update title
-        document.getElementById('formTitle').textContent = `${this.formType} Form`;
+        const titleElement = formElement.querySelector('h2');
+        if (titleElement) {
+          const formTypeName = this.formType.charAt(0).toUpperCase() + this.formType.slice(1);
+          titleElement.textContent = this.recordId ? 
+            `Edit ${formTypeName} (${this.recordId})` : 
+            `New ${formTypeName}`;
+        }
+        
+        // Update page title
+        document.title = `Jeffston Hostels - ${this.formType.charAt(0).toUpperCase() + this.formType.slice(1)} Form`;
+        
+        // Set today's date for date fields
+        this.setDefaultDates(formElement);
         
         // Prefill if editing
         if (this.recordId) {
@@ -125,108 +576,399 @@
         }
       }
 
-      async prefillForm(form) {
-        const data = await new Promise((resolve, reject) => {
-          const handler = `get${this.formType}Details`;
-          google.script.run
-            .withSuccessHandler(resolve)
-            .withFailureHandler(reject)
-            [handler](this.recordId);
+      setDefaultDates(form) {
+        const today = new Date().toISOString().split('T')[0];
+        form.querySelectorAll('input[type="date"]').forEach(input => {
+          if (!input.value) {
+            input.value = today;
+          }
         });
-        
-        if (data) {
-          Object.entries(data).forEach(([key, value]) => {
-            const input = form.querySelector(`[data-field="${key}"]`);
-            if (input) input.value = value;
-          });
+      }
+
+      async prefillForm(form) {
+        try {
+          const functionMap = {
+            'booking': 'getBookingDetails',
+            'resident': 'getResidentDetails'
+          };
+          
+          const functionName = functionMap[this.formType.toLowerCase()];
+          if (!functionName) return;
+          
+          const data = await this.serverCall(functionName, this.recordId);
+          
+          if (data) {
+            Object.entries(data).forEach(([key, value]) => {
+              const input = form.querySelector(`[data-field="${key}"]`);
+              if (input && value !== null && value !== undefined) {
+                if (input.type === 'date' && value instanceof Date) {
+                  input.value = value.toISOString().split('T')[0];
+                } else {
+                  input.value = value;
+                }
+              }
+            });
+          }
+        } catch (error) {
+          console.error('Error prefilling form:', error);
+          // Don't throw - let user continue with empty form
         }
       }
 
       setupEventListeners() {
+        const form = this.container.querySelector('form');
+        if (!form) return;
+        
         // Form submission
-        this.container.querySelector('form').addEventListener('submit', this.handleSubmit);
+        form.addEventListener('submit', this.handleSubmit);
         
-        // Close button
-        this.container.querySelector('.close-btn')?.addEventListener('click', this.handleClose);
+        // Close buttons
+        this.container.querySelectorAll('.cancel-btn').forEach(btn => {
+          btn.addEventListener('click', this.handleClose);
+        });
         
-        // Validation
-        this.container.querySelectorAll('[data-required="true"]').forEach(input => {
-          input.addEventListener('invalid', e => {
-            e.preventDefault();
-            input.classList.add('invalid');
+        // Real-time validation
+        form.querySelectorAll('input, select, textarea').forEach(input => {
+          input.addEventListener('input', () => {
+            input.classList.remove('invalid');
+          });
+          
+          input.addEventListener('blur', () => {
+            this.validateField(input);
           });
         });
+        
+        // Special handlers for payment form
+        if (this.formType === 'payment') {
+          this.setupPaymentFormHandlers();
+        }
+      }
+
+      setupPaymentFormHandlers() {
+        const bookingSelect = document.getElementById('bookingId');
+        const residentInput = document.getElementById('paymentResidentId');
+        const amountInput = document.getElementById('amount');
+        
+        if (bookingSelect && residentInput) {
+          bookingSelect.addEventListener('change', () => {
+            const selectedOption = bookingSelect.options[bookingSelect.selectedIndex];
+            
+            if (selectedOption && selectedOption.value) {
+              // Use data from the dropdown
+              residentInput.value = selectedOption.dataset.residentId || '';
+              
+              // Pre-fill amount with outstanding balance
+              if (amountInput && selectedOption.dataset.balance) {
+                const balance = parseFloat(selectedOption.dataset.balance);
+                if (balance > 0) {
+                  amountInput.value = balance.toFixed(2);
+                }
+              }
+            } else {
+              residentInput.value = '';
+              if (amountInput) amountInput.value = '';
+            }
+          });
+        }
+      }
+
+      validateField(field) {
+        if (field.required && !field.value.trim()) {
+          field.classList.add('invalid');
+          return false;
+        }
+        
+        if (field.type === 'email' && field.value && !this.isValidEmail(field.value)) {
+          field.classList.add('invalid');
+          return false;
+        }
+        
+        return true;
+      }
+
+      isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
       }
 
       async handleSubmit(event) {
         event.preventDefault();
+        
+        if (this.isSubmitting) return;
+        
         const form = event.target;
         const submitBtn = form.querySelector('[type="submit"]');
         
         try {
+          this.isSubmitting = true;
           submitBtn.disabled = true;
-          submitBtn.innerHTML = '<div class="spinner"></div>';
+          submitBtn.innerHTML = '<div class="spinner"></div>Submitting...';
+          
+          // Validate form
+          if (!this.validateForm(form)) {
+            throw new Error('Please fill in all required fields correctly.');
+          }
           
           const formData = this.getFormData(form);
-          const result = await this.submitForm(formData);
+          console.log('Submitting form data:', formData);
           
-          if (result.status === 'success') {
-            alert(result.message);
-            if (window.opener?.loadDashboardData) {
-              window.opener.loadDashboardData();
+          const result = await this.submitForm(formData);
+          console.log('Submission result:', result);
+          
+          if (result && result.status === 'success') {
+            const message = result.message || 'Form submitted successfully!';
+            
+            // Notify parent window of success
+            if (window.opener) {
+              try {
+                // Call the parent window's success handler
+                if (typeof window.opener.onModalSuccess === 'function') {
+                  window.opener.onModalSuccess(message);
+                } else {
+                  // Fallback - try to refresh dashboard directly
+                  if (typeof window.opener.refreshDashboard === 'function') {
+                    window.opener.refreshDashboard();
+                  } else if (typeof window.opener.loadDashboardData === 'function') {
+                    window.opener.loadDashboardData();
+                  }
+                  alert(message);
+                }
+                
+                // Give a moment for the parent window to process
+                setTimeout(() => {
+                  this.handleClose();
+                }, 500);
+                
+              } catch (error) {
+                console.error('Error communicating with parent window:', error);
+                alert(message);
+                this.handleClose();
+              }
+            } else {
+              alert(message);
+              this.handleClose();
             }
-            this.handleClose();
           } else {
-            throw new Error(result.message);
+            throw new Error(result?.message || 'Submission failed');
           }
         } catch (error) {
+          console.error('Submit error:', error);
           alert(`Error: ${error.message}`);
         } finally {
+          this.isSubmitting = false;
           submitBtn.disabled = false;
           submitBtn.textContent = 'Submit';
         }
       }
 
+      validateForm(form) {
+        let isValid = true;
+        const requiredFields = form.querySelectorAll('[required]');
+        
+        requiredFields.forEach(field => {
+          if (!this.validateField(field)) {
+            isValid = false;
+          }
+        });
+        
+        return isValid;
+      }
+
       getFormData(form) {
         const data = {};
         form.querySelectorAll('[data-field]').forEach(input => {
-          data[input.dataset.field] = input.value.trim();
+          let value = input.value.trim();
+          
+          // Type conversion
+          if (input.type === 'number') {
+            value = parseFloat(value) || 0;
+          }
+          
+          data[input.dataset.field] = value;
         });
+        
+        // Add record ID for updates
+        if (this.recordId) {
+          data[`${this.formType.toLowerCase()}Id`] = this.recordId;
+        }
+        
         return data;
       }
 
       async submitForm(formData) {
-        const handler = this.recordId ? `update${this.formType}` : `add${this.formType}`;
+        const functionMap = {
+          'booking': this.recordId ? 'updateBooking' : 'addBooking',
+          'resident': this.recordId ? 'updateResident' : 'addResident',
+          'payment': 'addPayment'
+        };
+        
+        const functionName = functionMap[this.formType.toLowerCase()];
+        console.log('Form type:', this.formType, 'Function name:', functionName, 'Record ID:', this.recordId);
+        
+        if (!functionName) {
+          throw new Error('Invalid form type for submission');
+        }
+        
+        console.log('Calling server function:', functionName, 'with data:', formData);
+        
+        try {
+          const result = await this.serverCall(functionName, formData);
+          console.log('Server response:', result);
+          return result;
+        } catch (error) {
+          console.error('Server call failed:', error);
+          throw error;
+        }
+      }
+
+      async serverCall(functionName, ...args) {
         return new Promise((resolve, reject) => {
+          console.log('Making server call:', functionName, 'with args:', args);
+          
+          // Set a timeout for the server call
+          const timeout = setTimeout(() => {
+            reject(new Error('Server call timed out after 30 seconds'));
+          }, 30000);
+          
           google.script.run
-            .withSuccessHandler(resolve)
-            .withFailureHandler(reject)
-            [handler](formData);
+            .withSuccessHandler((result) => {
+              clearTimeout(timeout);
+              console.log('Server call success:', functionName, result);
+              resolve(result);
+            })
+            .withFailureHandler((error) => {
+              clearTimeout(timeout);
+              console.error('Server call error:', functionName, error);
+              reject(error);
+            })
+            [functionName](...args);
         });
       }
 
       handleClose() {
-        if (this.context === 'WebApp') {
-          window.close();
-        } else {
-          google.script.host.close();
+        try {
+          // Notify parent window that we're closing
+          if (window.opener && typeof window.opener.closeModal === 'function') {
+            window.opener.closeModal();
+          }
+        } catch (error) {
+          console.error('Error notifying parent window:', error);
+        }
+        
+        // Close the window
+        try {
+          if (this.context === 'WebApp') {
+            window.close();
+          } else if (google && google.script && google.script.host) {
+            google.script.host.close();
+          } else {
+            // Fallback
+            window.close();
+          }
+        } catch (error) {
+          console.error('Error closing window:', error);
+        }
+        
+        // Force close as backup
+        if (window.forceClose) {
+          window.forceClose();
         }
       }
 
       handleError(error) {
+        console.error('Modal error:', error);
         clearTimeout(this.loadTimeout);
+        
         document.getElementById('loadingState').hidden = true;
         document.getElementById('errorState').hidden = false;
-        document.getElementById('errorMessage').textContent = error.message || error;
+        
+        const message = error?.message || error || 'An unexpected error occurred';
+        document.getElementById('errorMessage').textContent = message;
+      }
+
+      retryLoad() {
+        this.attempts = 0;
+        document.getElementById('errorState').hidden = true;
+        document.getElementById('loadingState').hidden = false;
+        this.initialize();
       }
     }
 
-    // Initialize modal
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => new ModalManager().initialize());
-    } else {
-      new ModalManager().initialize();
+    // Global retry function
+    window.retryLoad = function() {
+      if (window.modalManager) {
+        window.modalManager.retryLoad();
+      }
+    };
+
+    // Global close function
+    window.handleClose = function() {
+      if (window.modalManager) {
+        window.modalManager.handleClose();
+      }
+    };
+
+    // Force close if window is still open after 2 seconds of trying to close
+    window.forceClose = function() {
+      setTimeout(() => {
+        if (!window.closed) {
+          console.log('Force closing window');
+          window.close();
+        }
+      }, 2000);
+    };
+
+    // Initialize modal when DOM is ready
+    function initModal() {
+      // ✅ Force Google Apps Script context initialization for popups
+      if (typeof google !== 'undefined' && google.script) {
+        try {
+          // Multiple initialization calls to ensure proper loading
+          google.script.url.getLocation(() => {});
+          if (google.script.host) {
+            google.script.host.editor.focus();
+          }
+        } catch (e) {
+          console.log('Advanced Google Script initialization not available');
+        }
+      }
+      
+      window.modalManager = new ModalManager();
+      window.modalManager.initialize();
     }
+
+    // Enhanced initialization for Google Apps Script popups
+    let initAttempts = 0;
+    const maxInitAttempts = 50; // 5 seconds timeout
+    
+    function ensureGoogleScriptReady() {
+      if (typeof google !== 'undefined' && google.script && google.script.run) {
+        initModal();
+      } else if (initAttempts++ < maxInitAttempts) {
+        console.log('Waiting for Google Apps Script to load... attempt', initAttempts);
+        setTimeout(ensureGoogleScriptReady, 100);
+      } else {
+        console.error('Google Apps Script failed to load after 5 seconds');
+        document.getElementById('errorState').hidden = false;
+        document.getElementById('loadingState').hidden = true;
+        document.getElementById('errorMessage').textContent = 
+          'Failed to connect to Google Apps Script. Please close this window and try again.';
+      }
+    }
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', ensureGoogleScriptReady);
+    } else {
+      ensureGoogleScriptReady();
+    }
+
+    // Global error handler
+    window.onerror = function(msg, url, lineNo, columnNo, error) {
+      console.error('Global Error:', { msg, url, lineNo, columnNo, error });
+      if (window.modalManager) {
+        window.modalManager.handleError('A JavaScript error occurred. Please try again.');
+      }
+      return false;
+    };
   </script>
 </body>
 </html>
